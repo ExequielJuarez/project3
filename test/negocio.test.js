@@ -1,102 +1,125 @@
-// Prueba la lógica de negocio contra una base temporal: node --test test/
+// Prueba la lógica de negocio contra una base MySQL de pruebas: npm test
+// Usa la conexión del .env pero con la base "<DB_NAME>_test" (se recrea vacía en cada corrida).
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const os = require("os");
-const path = require("path");
+const mysql = require("mysql2/promise");
 
-process.env.DB_PATH = path.join(os.tmpdir(), `negocio-test-${process.pid}.db`);
+require("dotenv").config();
+process.env.DB_NAME = `${process.env.DB_NAME || "negocio_db"}_test`;
+
 const db = require("../src/config/db");
+const instalar = require("../src/config/instalador");
 const cajaService = require("../src/services/cajaService");
 const ventaService = require("../src/services/ventaService");
 const productoService = require("../src/services/productoService");
 const compraService = require("../src/services/compraService");
 
-const admin = db.prepare("SELECT id FROM usuarios WHERE usuario = 'admin'").get().id;
+let admin;
 const crearProducto = (nombre, precio, stock, codigo) =>
   productoService.crear({ codigo_barras: codigo, codigo_interno: null, nombre, categoria_id: null, costo: precio / 2, precio, stock_minimo: 0, unidad: "u", activo: 1 }, stock, admin);
 
-test("la pistola encuentra el producto por código de barras o interno", () => {
-  const id = crearProducto("Galletitas", 1000, 10, "7790001");
-  db.prepare("UPDATE productos SET codigo_interno = '55' WHERE id = ?").run(id);
-  assert.equal(productoService.porCodigo("7790001").id, id);
-  assert.equal(productoService.porCodigo("55").id, id);
-  assert.equal(productoService.porCodigo("no-existe"), undefined);
+test.before(async () => {
+  const { database, ...conexion } = db.opciones;
+  const c = await mysql.createConnection(conexion);
+  await c.query(`DROP DATABASE IF EXISTS \`${database}\``);
+  await c.end();
+  await instalar();
+  admin = (await db.uno("SELECT id FROM usuarios WHERE usuario = 'admin'")).id;
 });
 
-test("no se puede vender con la caja cerrada y se abre con monto inicial", () => {
-  assert.equal(cajaService.actual(), undefined);
-  cajaService.abrir(admin, 1000);
-  assert.throws(() => cajaService.abrir(admin, 5), /Ya hay una caja abierta/);
+test("la pistola encuentra el producto por código de barras o interno", async () => {
+  const id = await crearProducto("Galletitas", 1000, 10, "7790001");
+  await db.run("UPDATE productos SET codigo_interno = '55' WHERE id = ?", [id]);
+  assert.equal((await productoService.porCodigo("7790001")).id, id);
+  assert.equal((await productoService.porCodigo("55")).id, id);
+  assert.equal(await productoService.porCodigo("no-existe"), undefined);
 });
 
-test("una venta descuenta stock, numera la factura y calcula el vuelto", () => {
-  const caja = cajaService.actual();
-  const id = productoService.porCodigo("7790001").id;
-  const r = ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: id, cantidad: 3 }], descuento: 0, pagos: { efectivo: 5000 } });
+test("no se repite un código de barras", async () => {
+  await assert.rejects(() => crearProducto("Otro", 5, 0, "7790001"), (e) => db.esDuplicado(e));
+});
+
+test("se abre la caja con monto inicial y no puede haber dos abiertas", async () => {
+  assert.equal(await cajaService.actual(), undefined);
+  await cajaService.abrir(admin, 1000);
+  await assert.rejects(() => cajaService.abrir(admin, 5), /Ya hay una caja abierta/);
+});
+
+test("una venta descuenta stock, numera la factura y calcula el vuelto", async () => {
+  const caja = await cajaService.actual();
+  const id = (await productoService.porCodigo("7790001")).id;
+  const r = await ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: id, cantidad: 3 }], descuento: 0, pagos: { efectivo: 5000 } });
   assert.equal(r.numero, "0001-00000001");
   assert.equal(r.total, 3000);
   assert.equal(r.vuelto, 2000);
-  assert.equal(productoService.obtener(id).stock, 7);
+  assert.equal((await productoService.obtener(id)).stock, 7);
 });
 
-test("si algo falla no se guarda nada (ni stock ni número de factura)", () => {
-  const caja = cajaService.actual();
-  const a = productoService.porCodigo("7790001").id;
-  const b = crearProducto("Alfajor", 500, 1, "7790002");
-  assert.throws(
+test("si algo falla no se guarda nada (ni stock ni número de factura)", async () => {
+  const caja = await cajaService.actual();
+  const a = (await productoService.porCodigo("7790001")).id;
+  const b = await crearProducto("Alfajor", 500, 1, "7790002");
+  await assert.rejects(
     () => ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: a, cantidad: 2 }, { producto_id: b, cantidad: 5 }], pagos: { efectivo: 99999 } }),
-    /Stock insuficiente/
-  );
-  assert.equal(productoService.obtener(a).stock, 7);
-  assert.equal(db.prepare("SELECT COUNT(*) n FROM ventas").get().n, 1);
-  assert.throws(() => ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: a, cantidad: 1 }], pagos: { efectivo: 10 } }), /no alcanza/);
+    /Stock insuficiente/);
+  assert.equal((await productoService.obtener(a)).stock, 7);
+  assert.equal((await db.uno("SELECT COUNT(*) AS n FROM ventas")).n, 1);
+  await assert.rejects(() => ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: a, cantidad: 1 }], pagos: { efectivo: 10 } }), /no alcanza/);
 });
 
-test("pago mixto: el vuelto solo sale del efectivo", () => {
-  const caja = cajaService.actual();
-  const a = productoService.porCodigo("7790001").id;
-  const r = ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: a, cantidad: 1 }], pagos: { efectivo: 200, tarjeta: 900 } });
+test("dos cajas vendiendo a la vez el último producto: solo una lo consigue", async () => {
+  const caja = await cajaService.actual();
+  const id = await crearProducto("Último", 100, 1, "7790003");
+  const vender = () => ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: id, cantidad: 1 }], pagos: { efectivo: 100 } });
+  const r = await Promise.allSettled([vender(), vender()]);
+  assert.equal(r.filter((x) => x.status === "fulfilled").length, 1);
+  assert.equal((await productoService.obtener(id)).stock, 0);
+});
+
+test("pago mixto: el vuelto solo sale del efectivo", async () => {
+  const caja = await cajaService.actual();
+  const a = (await productoService.porCodigo("7790001")).id;
+  const r = await ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: a, cantidad: 1 }], pagos: { efectivo: 200, tarjeta: 900 } });
   assert.equal(r.vuelto, 100);
-  const v = ventaService.obtener(r.id);
+  const v = await ventaService.obtener(r.id);
   assert.equal(v.pago_efectivo, 100);
   assert.equal(v.pago_tarjeta, 900);
-  assert.throws(() => ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: a, cantidad: 1 }], pagos: { tarjeta: 1500 } }), /vuelto/);
+  await assert.rejects(() => ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: a, cantidad: 1 }], pagos: { tarjeta: 1500 } }), /vuelto/);
 });
 
-test("anular devuelve el stock y deja de contar en los totales", () => {
-  const caja = cajaService.actual();
-  const a = productoService.porCodigo("7790001").id;
-  const antes = productoService.obtener(a).stock;
-  const r = ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: a, cantidad: 2 }], pagos: { efectivo: 2000 } });
-  const totalAntes = cajaService.resumen(caja.id).totalVentas;
-  ventaService.anular(r.id, admin, "prueba");
-  assert.equal(productoService.obtener(a).stock, antes);
-  assert.equal(cajaService.resumen(caja.id).totalVentas, totalAntes - 2000);
-  assert.throws(() => ventaService.anular(r.id, admin, "otra vez"), /ya estaba anulada/);
+test("anular devuelve el stock y deja de contar en los totales", async () => {
+  const caja = await cajaService.actual();
+  const a = (await productoService.porCodigo("7790001")).id;
+  const antes = (await productoService.obtener(a)).stock;
+  const r = await ventaService.crear({ usuarioId: admin, cajaId: caja.id, items: [{ producto_id: a, cantidad: 2 }], pagos: { efectivo: 2000 } });
+  const totalAntes = (await cajaService.resumen(caja.id)).totalVentas;
+  await ventaService.anular(r.id, admin, "prueba");
+  assert.equal((await productoService.obtener(a)).stock, antes);
+  assert.equal((await cajaService.resumen(caja.id)).totalVentas, totalAntes - 2000);
+  await assert.rejects(() => ventaService.anular(r.id, admin, "otra vez"), /ya estaba anulada/);
 });
 
-test("la compra a proveedor suma stock y actualiza el costo", () => {
-  const a = productoService.porCodigo("7790001").id;
-  const antes = productoService.obtener(a).stock;
-  compraService.crear({ usuarioId: admin, items: [{ producto_id: a, cantidad: 10, costo: 700 }] });
-  const p = productoService.obtener(a);
+test("la compra a proveedor suma stock y actualiza el costo", async () => {
+  const a = (await productoService.porCodigo("7790001")).id;
+  const antes = (await productoService.obtener(a)).stock;
+  await compraService.crear({ usuarioId: admin, items: [{ producto_id: a, cantidad: 10, costo: 700 }] });
+  const p = await productoService.obtener(a);
   assert.equal(p.stock, antes + 10);
   assert.equal(p.costo, 700);
 });
 
-test("el cierre de caja guarda la foto del turno y calcula la diferencia", () => {
-  const caja = cajaService.actual();
-  cajaService.movimiento(caja.id, admin, "egreso", "Pago a proveedor", 300);
-  const r = cajaService.resumen(caja.id);
-  // inicial 1000 + efectivo cobrado − egresos
-  assert.equal(r.esperado, 1000 + r.efectivo - 300);
-  cajaService.cerrar(caja.id, admin, r.esperado - 50, "faltan 50");
-  const c = db.prepare("SELECT * FROM cajas WHERE id = ?").get(caja.id);
+test("el cierre de caja guarda la foto del turno y calcula la diferencia", async () => {
+  const caja = await cajaService.actual();
+  await cajaService.movimiento(caja.id, admin, "egreso", "Pago a proveedor", 300);
+  const r = await cajaService.resumen(caja.id);
+  assert.equal(r.esperado, 1000 + r.efectivo - 300); // inicial + efectivo cobrado − egresos
+  await cajaService.cerrar(caja.id, admin, r.esperado - 50, "faltan 50");
+  const c = await db.uno("SELECT * FROM cajas WHERE id = ?", [caja.id]);
   assert.equal(c.estado, "cerrada");
   assert.equal(c.diferencia, -50);
   assert.equal(c.total_ventas, r.totalVentas);
-  assert.equal(cajaService.actual(), undefined);
-  assert.ok(db.prepare("SELECT * FROM v_resumen_diario").get().cant_ventas >= 2);
+  assert.equal(await cajaService.actual(), undefined);
+  assert.ok((await db.uno("SELECT * FROM v_resumen_diario")).cant_ventas >= 2);
 });
 
-test.after(() => { db.close(); for (const s of ["", "-wal", "-shm"]) try { require("fs").unlinkSync(process.env.DB_PATH + s); } catch {} });
+test.after(() => db.cerrar());

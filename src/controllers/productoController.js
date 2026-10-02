@@ -2,24 +2,25 @@ const db = require("../config/db");
 const s = require("../services/productoService");
 const { numero } = require("../helpers/dinero");
 
-const categorias = () => db.prepare("SELECT * FROM categorias ORDER BY nombre COLLATE NOCASE").all();
+const categorias = () => db.todos("SELECT * FROM categorias ORDER BY nombre");
 
-exports.listar = (req, res) => {
+exports.listar = async (req, res) => {
   const { q = "", categoria = "", filtro = "" } = req.query;
-  res.render("productos/lista", { titulo: "Productos", productos: s.listar({ q, categoria, filtro }), categorias: categorias(), q, categoria, filtro });
+  res.render("productos/lista", { titulo: "Productos", productos: await s.listar({ q, categoria, filtro }), categorias: await categorias(), q, categoria, filtro });
 };
 
-exports.nuevo = (req, res) =>
-  res.render("productos/form", { titulo: "Nuevo producto", p: { activo: 1, unidad: "u", stock: 0 }, categorias: categorias(), error: null, esNuevo: true });
+exports.nuevo = async (req, res) =>
+  res.render("productos/form", { titulo: "Nuevo producto", p: { activo: 1, unidad: "u", stock: 0 }, categorias: await categorias(), error: null, esNuevo: true });
 
-exports.crear = (req, res) => {
+exports.crear = async (req, res) => {
   const { datos, error } = s.normalizar(req.body);
   const stock = numero(req.body.stock || 0);
-  const volver = (msg) => res.status(400).render("productos/form", { titulo: "Nuevo producto", p: { ...req.body, activo: req.body.activo ? 1 : 0 }, categorias: categorias(), error: msg, esNuevo: true });
+  const volver = async (msg) =>
+    res.status(400).render("productos/form", { titulo: "Nuevo producto", p: { ...req.body, activo: req.body.activo ? 1 : 0 }, categorias: await categorias(), error: msg, esNuevo: true });
   if (error) return volver(error);
   if (!(stock >= 0)) return volver("El stock inicial no es válido");
   try {
-    s.crear(datos, stock, req.session.usuario.id);
+    await s.crear(datos, stock, req.session.usuario.id);
   } catch (e) {
     const m = s.mensajeUnico(e);
     if (m) return volver(m);
@@ -29,20 +30,24 @@ exports.crear = (req, res) => {
   res.redirect(req.body.otro ? "/productos/nuevo" : "/productos");
 };
 
-exports.editar = (req, res) => {
-  const p = s.obtener(req.params.id);
+exports.editar = async (req, res) => {
+  const p = await s.obtener(req.params.id);
   if (!p) return res.status(404).render("error", { titulo: "No encontrado", mensaje: "Producto inexistente" });
-  res.render("productos/form", { titulo: "Editar producto", p, categorias: categorias(), error: null, esNuevo: false, movimientos: s.movimientos(p.id) });
+  res.render("productos/form", { titulo: "Editar producto", p, categorias: await categorias(), error: null, esNuevo: false, movimientos: await s.movimientos(p.id) });
 };
 
-exports.actualizar = (req, res) => {
-  const p = s.obtener(req.params.id);
+exports.actualizar = async (req, res) => {
+  const p = await s.obtener(req.params.id);
   if (!p) return res.status(404).render("error", { titulo: "No encontrado", mensaje: "Producto inexistente" });
   const { datos, error } = s.normalizar(req.body);
-  const volver = (msg) => res.status(400).render("productos/form", { titulo: "Editar producto", p: { ...p, ...req.body, id: p.id, stock: p.stock, activo: req.body.activo ? 1 : 0 }, categorias: categorias(), error: msg, esNuevo: false, movimientos: s.movimientos(p.id) });
+  const volver = async (msg) =>
+    res.status(400).render("productos/form", {
+      titulo: "Editar producto", p: { ...p, ...req.body, id: p.id, stock: p.stock, activo: req.body.activo ? 1 : 0 },
+      categorias: await categorias(), error: msg, esNuevo: false, movimientos: await s.movimientos(p.id),
+    });
   if (error) return volver(error);
   try {
-    s.actualizar(p.id, datos);
+    await s.actualizar(p.id, datos);
   } catch (e) {
     const m = s.mensajeUnico(e);
     if (m) return volver(m);
@@ -52,16 +57,16 @@ exports.actualizar = (req, res) => {
   res.redirect("/productos");
 };
 
-exports.ajustar = (req, res) => {
+exports.ajustar = async (req, res) => {
   const nuevo = numero(req.body.stock);
   if (!(nuevo >= 0)) { req.flash("error", "Stock inválido"); return res.redirect(`/productos/${req.params.id}/editar`); }
-  s.ajustarStock(req.params.id, nuevo, (req.body.nota || "").trim(), req.session.usuario.id);
+  await s.ajustarStock(req.params.id, nuevo, (req.body.nota || "").trim(), req.session.usuario.id);
   req.flash("ok", "Stock ajustado");
   res.redirect(`/productos/${req.params.id}/editar`);
 };
 
-exports.desactivar = (req, res) => {
-  db.prepare("UPDATE productos SET activo = 0 WHERE id = ?").run(req.params.id);
+exports.desactivar = async (req, res) => {
+  await db.run("UPDATE productos SET activo = 0 WHERE id = ?", [req.params.id]);
   req.flash("ok", "Producto desactivado (el historial de ventas se conserva)");
   res.redirect("/productos");
 };

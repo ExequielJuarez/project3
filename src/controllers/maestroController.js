@@ -1,16 +1,18 @@
 // CRUD simple reutilizado por categorías, clientes y proveedores.
 const db = require("../config/db");
 
-module.exports = function crearMaestro({ tabla, titulo, singular, campos, ruta, soloAdmin = false, soloActivos = true }) {
+module.exports = function crearMaestro({ tabla, titulo, singular, campos, ruta, soloActivos = true }) {
+  const buscables = campos.filter((c) => c.buscar !== false);
+
   const filas = (q) => {
     const like = `%${q}%`;
-    const buscables = campos.filter((c) => c.buscar !== false).map((c) => `${c.nombre} LIKE ?`).join(" OR ");
     const activo = soloActivos ? "activo = 1 AND" : "";
-    return db.prepare(`SELECT * FROM ${tabla} WHERE ${activo} (${buscables || "1"}) ORDER BY ${campos[0].nombre} COLLATE NOCASE LIMIT 500`)
-      .all(...campos.filter((c) => c.buscar !== false).map(() => like));
+    return db.todos(
+      `SELECT * FROM ${tabla} WHERE ${activo} (${buscables.map((c) => `${c.nombre} LIKE ?`).join(" OR ") || "1"}) ORDER BY ${campos[0].nombre} LIMIT 500`,
+      buscables.map(() => like));
   };
-  const vista = (res, extra = {}) =>
-    res.render("maestros/lista", { titulo, singular, campos, ruta, filas: filas(extra.q || ""), q: "", editando: null, error: null, ...extra });
+  const vista = async (res, extra = {}) =>
+    res.render("maestros/lista", { titulo, singular, campos, ruta, filas: await filas(extra.q || ""), q: "", editando: null, error: null, ...extra });
 
   const leer = (body) => {
     const datos = {};
@@ -18,44 +20,44 @@ module.exports = function crearMaestro({ tabla, titulo, singular, campos, ruta, 
     const falta = campos.find((c) => c.requerido && !datos[c.nombre]);
     return { datos, error: falta ? `${falta.etiqueta} es obligatorio` : null };
   };
+  const valores = (datos) => campos.map((c) => datos[c.nombre]);
 
   return {
-    listar: (req, res) => {
+    listar: async (req, res) => {
       const q = (req.query.q || "").trim();
-      const editando = req.query.editar ? db.prepare(`SELECT * FROM ${tabla} WHERE id = ?`).get(req.query.editar) : null;
-      vista(res, { q, editando });
+      const editando = req.query.editar ? await db.uno(`SELECT * FROM ${tabla} WHERE id = ?`, [req.query.editar]) : null;
+      await vista(res, { q, editando });
     },
-    crear: (req, res) => {
+    crear: async (req, res) => {
       const { datos, error } = leer(req.body);
       if (error) return vista(res.status(400), { error });
       try {
-        db.prepare(`INSERT INTO ${tabla} (${campos.map((c) => c.nombre)}) VALUES (${campos.map((c) => "@" + c.nombre)})`).run(datos);
+        await db.run(`INSERT INTO ${tabla} (${campos.map((c) => c.nombre)}) VALUES (${campos.map(() => "?")})`, valores(datos));
       } catch (e) {
-        if (e.code === "SQLITE_CONSTRAINT_UNIQUE") return vista(res.status(400), { error: `Ya existe ${singular} con ese nombre` });
+        if (db.esDuplicado(e)) return vista(res.status(400), { error: `Ya existe ${singular} con ese nombre` });
         throw e;
       }
       req.flash("ok", `${singular[0].toUpperCase() + singular.slice(1)} guardado`);
       res.redirect(ruta);
     },
-    actualizar: (req, res) => {
+    actualizar: async (req, res) => {
       const { datos, error } = leer(req.body);
       if (error) { req.flash("error", error); return res.redirect(ruta); }
       try {
-        db.prepare(`UPDATE ${tabla} SET ${campos.map((c) => `${c.nombre} = @${c.nombre}`)} WHERE id = @id`).run({ ...datos, id: req.params.id });
+        await db.run(`UPDATE ${tabla} SET ${campos.map((c) => `${c.nombre} = ?`)} WHERE id = ?`, [...valores(datos), req.params.id]);
       } catch (e) {
-        if (e.code !== "SQLITE_CONSTRAINT_UNIQUE") throw e;
+        if (!db.esDuplicado(e)) throw e;
         req.flash("error", `Ya existe ${singular} con ese nombre`);
         return res.redirect(ruta);
       }
       req.flash("ok", "Cambios guardados");
       res.redirect(ruta);
     },
-    eliminar: (req, res) => {
-      if (soloActivos) db.prepare(`UPDATE ${tabla} SET activo = 0 WHERE id = ?`).run(req.params.id);
-      else db.prepare(`DELETE FROM ${tabla} WHERE id = ?`).run(req.params.id);
+    eliminar: async (req, res) => {
+      if (soloActivos) await db.run(`UPDATE ${tabla} SET activo = 0 WHERE id = ?`, [req.params.id]);
+      else await db.run(`DELETE FROM ${tabla} WHERE id = ?`, [req.params.id]);
       req.flash("ok", "Eliminado");
       res.redirect(ruta);
     },
-    soloAdmin,
   };
 };

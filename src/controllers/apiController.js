@@ -6,22 +6,23 @@ const salida = (p, admin) => ({
   id: p.id, codigo_barras: p.codigo_barras, codigo_interno: p.codigo_interno, nombre: p.nombre,
   categoria: p.categoria, precio: p.precio, stock: p.stock, unidad: p.unidad, stock_minimo: p.stock_minimo,
 });
+const esAdmin = (req) => req.session.usuario.rol === "admin";
 
-exports.porCodigo = (req, res) => {
-  const p = productoService.porCodigo(String(req.params.codigo).trim());
+exports.porCodigo = async (req, res) => {
+  const p = await productoService.porCodigo(String(req.params.codigo).trim());
   if (!p) return res.status(404).json({ ok: false, mensaje: "Producto no encontrado" });
-  res.json({ ok: true, producto: salida(p, req.session.usuario.rol === "admin") });
+  res.json({ ok: true, producto: salida(p, esAdmin(req)) });
 };
 
-exports.buscar = (req, res) => {
+exports.buscar = async (req, res) => {
   const q = String(req.query.q || "").trim();
   if (!q) return res.json({ ok: true, productos: [] });
-  res.json({ ok: true, productos: productoService.buscar(q, 15).map((p) => salida(p, req.session.usuario.rol === "admin")) });
+  res.json({ ok: true, productos: (await productoService.buscar(q, 15)).map((p) => salida(p, esAdmin(req))) });
 };
 
-exports.crearVenta = (req, res) => {
+exports.crearVenta = async (req, res) => {
   try {
-    const r = ventaService.crear({
+    const r = await ventaService.crear({
       usuarioId: req.session.usuario.id, cajaId: req.caja.id,
       items: req.body.items, descuento: req.body.descuento, pagos: req.body.pagos,
       clienteId: req.body.cliente_id ? Number(req.body.cliente_id) : null, notas: req.body.notas,

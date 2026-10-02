@@ -1,7 +1,7 @@
 -- Datos de ejemplo para probar el sistema (npm run db:demo). No se cargan si ya hay productos.
-INSERT OR IGNORE INTO categorias (nombre) VALUES ('Almacén'), ('Bebidas'), ('Lácteos'), ('Limpieza'), ('Golosinas');
+INSERT IGNORE INTO categorias (nombre) VALUES ('Almacén'), ('Bebidas'), ('Lácteos'), ('Limpieza'), ('Golosinas');
 
-INSERT OR IGNORE INTO productos (codigo_barras, codigo_interno, nombre, categoria_id, costo, precio, stock, stock_minimo, unidad) VALUES
+INSERT IGNORE INTO productos (codigo_barras, codigo_interno, nombre, categoria_id, costo, precio, stock, stock_minimo, unidad) VALUES
  ('7790070411006', '101', 'Aceite de girasol 900 ml',     (SELECT id FROM categorias WHERE nombre='Almacén'),   2100, 2890, 24, 6, 'u'),
  ('7791234567890', '102', 'Arroz largo fino 1 kg',        (SELECT id FROM categorias WHERE nombre='Almacén'),    980, 1390, 40, 10, 'u'),
  ('7792222333344', '103', 'Fideos tirabuzón 500 g',       (SELECT id FROM categorias WHERE nombre='Almacén'),    720, 1050, 3, 8, 'u'),
@@ -17,5 +17,5 @@ INSERT INTO stock_movimientos (producto_id, tipo, cantidad, stock_resultante, no
 SELECT id, 'inicial', stock, stock, 'Stock inicial (demo)' FROM productos
 WHERE id NOT IN (SELECT producto_id FROM stock_movimientos);
 
-INSERT OR IGNORE INTO clientes (id, nombre, documento, telefono) VALUES (1, 'María Gómez', '27123456789', '11 5555-1234');
-INSERT OR IGNORE INTO proveedores (id, nombre, contacto, telefono) VALUES (1, 'Distribuidora Central', 'Carlos', '11 4444-9876');
+INSERT IGNORE INTO clientes (id, nombre, documento, telefono) VALUES (1, 'María Gómez', '27123456789', '11 5555-1234');
+INSERT IGNORE INTO proveedores (id, nombre, contacto, telefono) VALUES (1, 'Distribuidora Central', 'Carlos', '11 4444-9876');

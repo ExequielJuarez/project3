@@ -6,6 +6,7 @@ const session = require("express-session");
 const methodOverride = require("method-override");
 
 const db = require("./config/db");
+const instalar = require("./config/instalador");
 const formato = require("./helpers/formato");
 const configService = require("./services/configService");
 const cajaService = require("./services/cajaService");
@@ -46,15 +47,19 @@ app.use((req, res, next) => {
 });
 
 Object.assign(app.locals, formato);
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
   res.locals.usuario = req.session.usuario || null;
   res.locals.rutaActual = req.path;
   res.locals.titulo = "";
-  if (req.session.usuario) {
-    res.locals.negocio = configService.todo();
-    res.locals.cajaActual = cajaService.actual() || null;
+  try {
+    if (req.session.usuario) {
+      res.locals.negocio = await configService.todo();
+      res.locals.cajaActual = (await cajaService.actual()) || null;
+    }
+    next();
+  } catch (e) {
+    next(e);
   }
-  next();
 });
 
 app.use(csrf);
@@ -87,9 +92,18 @@ app.use((err, req, res, next) => {
 });
 
 if (require.main === module) {
-  app.listen(puerto, () => {
-    console.log(`🚀 Sistema listo en http://localhost:${puerto}`);
-    console.log(`🗄️  Base de datos: ${db.rutaArchivo}`);
-  });
+  // Crea la base y las tablas si faltan, y recién ahí empieza a atender
+  instalar()
+    .then(() => {
+      app.listen(puerto, () => {
+        console.log(`✅ Conectado a MySQL: base "${db.opciones.database}" en ${db.opciones.host}`);
+        console.log(`🚀 Sistema listo en http://localhost:${puerto}`);
+      });
+    })
+    .catch((e) => {
+      console.error("❌ No se pudo conectar con MySQL:", e.message);
+      console.error("   Revisá DB_HOST, DB_USER, DB_PASSWORD y DB_NAME en el .env y que MySQL esté encendido.");
+      process.exit(1);
+    });
 }
 module.exports = app;

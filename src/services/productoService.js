@@ -4,13 +4,13 @@ const { redondear, numero, dinero } = require("../helpers/dinero");
 const BASE = `SELECT p.*, c.nombre AS categoria FROM productos p LEFT JOIN categorias c ON c.id = p.categoria_id`;
 
 // Lo que lee la pistola: coincidencia exacta por código de barras o interno
-const porCodigo = (codigo) =>
-  db.prepare(`${BASE} WHERE p.activo = 1 AND (p.codigo_barras = ? OR p.codigo_interno = ?)`).get(codigo, codigo);
+const porCodigo = (codigo) => db.uno(`${BASE} WHERE p.activo = 1 AND (p.codigo_barras = ? OR p.codigo_interno = ?)`, [codigo, codigo]);
 
 const buscar = (q, limite = 20) => {
   const like = `%${q}%`;
-  return db.prepare(`${BASE} WHERE p.activo = 1 AND (p.nombre LIKE ? OR p.codigo_barras LIKE ? OR p.codigo_interno LIKE ?)
-    ORDER BY p.nombre COLLATE NOCASE LIMIT ?`).all(like, like, like, limite);
+  return db.todos(
+    `${BASE} WHERE p.activo = 1 AND (p.nombre LIKE ? OR p.codigo_barras LIKE ? OR p.codigo_interno LIKE ?) ORDER BY p.nombre LIMIT ?`,
+    [like, like, like, limite]);
 };
 
 const listar = ({ q, categoria, filtro }) => {
@@ -21,10 +21,10 @@ const listar = ({ q, categoria, filtro }) => {
   if (filtro === "bajo") where.push("p.activo = 1 AND p.stock <= p.stock_minimo");
   if (filtro === "inactivos") where.push("p.activo = 0");
   else if (filtro !== "todos" && filtro !== "bajo") where.push("p.activo = 1");
-  return db.prepare(`${BASE} ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY p.nombre COLLATE NOCASE LIMIT 1000`).all(...params);
+  return db.todos(`${BASE} ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY p.nombre LIMIT 1000`, params);
 };
 
-const obtener = (id) => db.prepare(`${BASE} WHERE p.id = ?`).get(id);
+const obtener = (id) => db.uno(`${BASE} WHERE p.id = ?`, [id]);
 
 // Valida y normaliza el formulario; devuelve { datos, error }
 function normalizar(b) {
@@ -46,45 +46,45 @@ function normalizar(b) {
 }
 
 function mensajeUnico(e) {
-  if (e.code === "SQLITE_CONSTRAINT_UNIQUE") {
-    return /codigo_barras/.test(e.message) ? "Ya existe un producto con ese código de barras" : "Ya existe un producto con ese código interno";
-  }
-  return null;
+  if (!db.esDuplicado(e)) return null;
+  return /codigo_barras/.test(e.message) ? "Ya existe un producto con ese código de barras" : "Ya existe un producto con ese código interno";
 }
 
-function crear(d, stockInicial, usuarioId) {
-  return db.transaction(() => {
-    const r = db.prepare(`INSERT INTO productos (codigo_barras, codigo_interno, nombre, categoria_id, costo, precio, stock, stock_minimo, unidad, activo)
-      VALUES (@codigo_barras,@codigo_interno,@nombre,@categoria_id,@costo,@precio,@stock,@stock_minimo,@unidad,@activo)`)
-      .run({ ...d, stock: stockInicial });
+const crear = (d, stockInicial, usuarioId) =>
+  db.transaccion(async (t) => {
+    const r = await t.run(
+      `INSERT INTO productos (codigo_barras, codigo_interno, nombre, categoria_id, costo, precio, stock, stock_minimo, unidad, activo)
+       VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      [d.codigo_barras, d.codigo_interno, d.nombre, d.categoria_id, d.costo, d.precio, stockInicial, d.stock_minimo, d.unidad, d.activo]);
     if (stockInicial) {
-      db.prepare("INSERT INTO stock_movimientos (producto_id, tipo, cantidad, stock_resultante, nota, usuario_id) VALUES (?, 'inicial', ?, ?, 'Stock inicial', ?)")
-        .run(r.lastInsertRowid, stockInicial, stockInicial, usuarioId);
+      await t.run("INSERT INTO stock_movimientos (producto_id, tipo, cantidad, stock_resultante, nota, usuario_id) VALUES (?, 'inicial', ?, ?, 'Stock inicial', ?)",
+        [r.insertId, stockInicial, stockInicial, usuarioId]);
     }
-    return r.lastInsertRowid;
-  })();
-}
+    return r.insertId;
+  });
 
 const actualizar = (id, d) =>
-  db.prepare(`UPDATE productos SET codigo_barras=@codigo_barras, codigo_interno=@codigo_interno, nombre=@nombre, categoria_id=@categoria_id,
-    costo=@costo, precio=@precio, stock_minimo=@stock_minimo, unidad=@unidad, activo=@activo, actualizado_en=datetime('now','localtime') WHERE id=@id`)
-    .run({ ...d, id });
+  db.run(
+    `UPDATE productos SET codigo_barras=?, codigo_interno=?, nombre=?, categoria_id=?, costo=?, precio=?, stock_minimo=?, unidad=?, activo=? WHERE id=?`,
+    [d.codigo_barras, d.codigo_interno, d.nombre, d.categoria_id, d.costo, d.precio, d.stock_minimo, d.unidad, d.activo, id]);
 
 // Ajuste manual: se informa el stock real contado y queda el registro de la diferencia
-const ajustarStock = db.transaction((id, nuevoStock, nota, usuarioId) => {
-  const p = db.prepare("SELECT stock FROM productos WHERE id = ?").get(id);
-  if (!p) throw new Error("Producto inexistente");
-  const dif = nuevoStock - p.stock;
-  if (dif === 0) return;
-  db.prepare("UPDATE productos SET stock = ?, actualizado_en = datetime('now','localtime') WHERE id = ?").run(nuevoStock, id);
-  db.prepare("INSERT INTO stock_movimientos (producto_id, tipo, cantidad, stock_resultante, nota, usuario_id) VALUES (?, 'ajuste', ?, ?, ?, ?)")
-    .run(id, dif, nuevoStock, nota || "Ajuste manual", usuarioId);
-});
+const ajustarStock = (id, nuevoStock, nota, usuarioId) =>
+  db.transaccion(async (t) => {
+    const p = await t.uno("SELECT stock FROM productos WHERE id = ? FOR UPDATE", [id]);
+    if (!p) throw new Error("Producto inexistente");
+    const dif = redondear3(nuevoStock - p.stock);
+    if (dif === 0) return;
+    await t.run("UPDATE productos SET stock = ? WHERE id = ?", [nuevoStock, id]);
+    await t.run("INSERT INTO stock_movimientos (producto_id, tipo, cantidad, stock_resultante, nota, usuario_id) VALUES (?, 'ajuste', ?, ?, ?, ?)",
+      [id, dif, nuevoStock, nota || "Ajuste manual", usuarioId]);
+  });
+const redondear3 = (n) => Math.round(n * 1000) / 1000;
 
 const movimientos = (id) =>
-  db.prepare("SELECT m.*, u.nombre AS usuario FROM stock_movimientos m LEFT JOIN usuarios u ON u.id = m.usuario_id WHERE producto_id = ? ORDER BY m.id DESC LIMIT 100").all(id);
+  db.todos("SELECT m.*, u.nombre AS usuario FROM stock_movimientos m LEFT JOIN usuarios u ON u.id = m.usuario_id WHERE producto_id = ? ORDER BY m.id DESC LIMIT 100", [id]);
 
 const stockBajo = (limite = 10) =>
-  db.prepare(`${BASE} WHERE p.activo = 1 AND p.stock <= p.stock_minimo ORDER BY (p.stock - p.stock_minimo) LIMIT ?`).all(limite);
+  db.todos(`${BASE} WHERE p.activo = 1 AND p.stock <= p.stock_minimo ORDER BY (p.stock - p.stock_minimo) LIMIT ?`, [limite]);
 
 module.exports = { porCodigo, buscar, listar, obtener, normalizar, mensajeUnico, crear, actualizar, ajustarStock, movimientos, stockBajo };

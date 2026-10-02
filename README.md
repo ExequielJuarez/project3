@@ -2,14 +2,14 @@
 
 Punto de venta + stock + caja + facturas para un comercio. Funciona con **pistola lectora de códigos de barras**, código manual o búsqueda por nombre, y se adapta a **PC, tablet y celular**.
 
-**Stack:** Node.js · Express 5 · EJS · SQLite (better-sqlite3) · CSS y JS propios (sin frameworks, siempre en archivos separados).
+**Stack:** Node.js · Express 5 · EJS · **MySQL** (mysql2) · CSS y JS propios (sin frameworks, siempre en archivos separados).
 
 ## Puesta en marcha
 
 ```bash
 npm install
-cp .env.example .env        # y cambiá SESSION_SECRET
-npm run db:demo             # crea la base con productos de ejemplo (o: npm run db:instalar para vacía)
+cp .env.example .env        # completá DB_USER / DB_PASSWORD de tu MySQL y cambiá SESSION_SECRET
+npm run db:demo             # crea la base, las tablas y productos de ejemplo (o: npm run db:instalar para vacía)
 npm start                   # http://localhost:3000
 ```
 
@@ -31,23 +31,26 @@ Para usarlo desde otro dispositivo del local (tablet/celular) entrá a `http://I
 | **Usuarios** | Roles `admin` y `cajero` (el cajero no ve costos, reportes, compras ni configuración). |
 | **Respaldo** | Botón en Configuración para descargar una copia de la base. |
 
-## Base de datos
+## Base de datos (MySQL)
 
-- Esquema SQL completo y comentado: [`database/schema.sql`](database/schema.sql) (se aplica solo al iniciar, sin borrar datos).
-- Archivo de la base: `database/negocio.db` (no se sube a git). Cada venta, item, movimiento de stock y cierre queda registrado.
-- La vista `v_resumen_diario` resume las ventas de cada día; también podés consultarla con cualquier cliente SQLite:
+- Esquema SQL completo y comentado: [`database/schema.sql`](database/schema.sql). Tablas InnoDB, `utf8mb4`, dinero en `DECIMAL(12,2)`.
+- Al iniciar (o con `npm run db:instalar`) el sistema **crea la base `negocio_db` y las tablas si faltan**; nunca borra datos. Solo necesitás un usuario de MySQL con permisos (configurado en `.env`).
+- Cada venta, ítem, movimiento de stock, movimiento de caja y cierre queda registrado. La vista `v_resumen_diario` resume las ventas de cada día:
   ```sql
   SELECT * FROM v_resumen_diario ORDER BY fecha_dia DESC;
   ```
-- Las ventas se guardan en una **transacción**: si algo falla (stock, pago) no queda nada a medias.
+- Las ventas se guardan en una **transacción** con bloqueo de filas (`FOR UPDATE`): si algo falla no queda nada a medias y dos cajas no pueden vender el mismo último producto.
+- Un índice único garantiza a nivel base que no existan dos cajas abiertas a la vez.
+- Respaldo: Configuración → *Descargar respaldo* genera un `.sql` con todos los datos.
+- Pruebas: `npm test` usa una base aparte (`negocio_db_test`) que recrea en cada corrida.
 
 ## Estructura
 
 ```
-database/        schema.sql · datos-demo.sql · instalar.js · negocio.db
+database/        schema.sql · datos-demo.sql · instalar.js
 src/
   servidor.js    arranque de Express
-  config/        conexión a la base
+  config/        conexión MySQL (db.js) e instalador de la base
   routes/        rutas por módulo
   controllers/   reciben la petición y arman la respuesta
   services/      lógica de negocio (ventas, caja, stock, compras, reportes)
@@ -65,4 +68,4 @@ Claves con bcrypt, sesiones con cookie `httpOnly`, protección CSRF, límite de 
 
 ## Archivos heredados
 
-`src/app.js` y `src/routes/index.Routes.js` son del esqueleto anterior (MySQL/Sequelize) y **no se usan**: el sistema arranca con `src/servidor.js`. Se pueden borrar junto con las dependencias `mysql2`, `sequelize`, `multer`, `node-cron` y `express-validator`.
+`src/app.js`, `src/routes/index.Routes.js`, `.sequelizerc` y `src/model/` son del esqueleto anterior (Sequelize) y **no se usan**: el sistema arranca con `src/servidor.js` y consulta MySQL directamente con `mysql2`. Se pueden borrar junto con las dependencias `sequelize`, `multer`, `node-cron` y `express-validator`.

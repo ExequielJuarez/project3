@@ -94,7 +94,7 @@
           </button>`).join("");
         panel.hidden = !items.length;
       };
-      const elegir = (p) => { input.value = ""; ocultar(); alElegir(p); };
+      const elegir = (p) => { ocultar(); alElegir(p); };
 
       async function buscarNombre(q) {
         const id = ++pedido;
@@ -122,7 +122,7 @@
           input.value = ""; ocultar();
         } else if (e.key === "Enter") {
           e.preventDefault();
-          if (sel >= 0 && items[sel] && !panel.hidden) return elegir(items[sel]);
+          if (sel >= 0 && items[sel] && !panel.hidden) { input.value = ""; return elegir(items[sel]); }
           const bruto = input.value.trim();
           if (!bruto) return;
           // Se vacía al instante: así el siguiente escaneo no se mezcla con este

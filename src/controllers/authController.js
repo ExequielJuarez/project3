@@ -12,14 +12,14 @@ exports.formLogin = (req, res) => {
   res.render("auth/login", { titulo: "Ingresar", error: null, layoutSimple: true });
 };
 
-exports.login = (req, res) => {
+exports.login = async (req, res) => {
   const usuario = (req.body.usuario || "").trim();
   const clave = req.body.clave || "";
   const llave = `${req.ip}|${usuario.toLowerCase()}`;
   if (bloqueado(llave)) {
     return res.status(429).render("auth/login", { titulo: "Ingresar", error: "Demasiados intentos. Esperá unos minutos.", layoutSimple: true });
   }
-  const u = db.prepare("SELECT * FROM usuarios WHERE usuario = ? AND activo = 1").get(usuario);
+  const u = await db.uno("SELECT * FROM usuarios WHERE usuario = ? AND activo = 1", [usuario]);
   if (!u || !bcrypt.compareSync(clave, u.clave_hash)) {
     fallo(llave);
     return res.status(401).render("auth/login", { titulo: "Ingresar", error: "Usuario o clave incorrectos", layoutSimple: true });
@@ -37,16 +37,16 @@ exports.logout = (req, res) => req.session.destroy(() => res.redirect("/login"))
 
 exports.formClave = (req, res) => res.render("auth/clave", { titulo: "Cambiar clave", error: null });
 
-exports.cambiarClave = (req, res) => {
+exports.cambiarClave = async (req, res) => {
   const { actual, nueva, repetir } = req.body;
-  const u = db.prepare("SELECT * FROM usuarios WHERE id = ?").get(req.session.usuario.id);
+  const u = await db.uno("SELECT * FROM usuarios WHERE id = ?", [req.session.usuario.id]);
   const error =
     !bcrypt.compareSync(actual || "", u.clave_hash) ? "La clave actual no es correcta"
     : (nueva || "").length < 6 ? "La nueva clave debe tener al menos 6 caracteres"
     : nueva !== repetir ? "Las claves nuevas no coinciden"
     : nueva === actual ? "La nueva clave debe ser distinta de la actual" : null;
   if (error) return res.status(400).render("auth/clave", { titulo: "Cambiar clave", error });
-  db.prepare("UPDATE usuarios SET clave_hash = ?, debe_cambiar_clave = 0 WHERE id = ?").run(bcrypt.hashSync(nueva, 10), u.id);
+  await db.run("UPDATE usuarios SET clave_hash = ?, debe_cambiar_clave = 0 WHERE id = ?", [bcrypt.hashSync(nueva, 10), u.id]);
   req.session.usuario.debeCambiarClave = false;
   req.flash("ok", "Clave actualizada");
   res.redirect("/");

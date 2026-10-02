@@ -1,42 +1,58 @@
-// Conexión a SQLite (better-sqlite3): rápida, sin servidor aparte y con
-// transacciones, ideal para un negocio con una o varias cajas en un mismo local.
-const fs = require("fs");
-const path = require("path");
-const Database = require("better-sqlite3");
-const bcrypt = require("bcryptjs");
+// Conexión a MySQL (mysql2) con pool. Todas las consultas son asíncronas.
+require("dotenv").config();
+const mysql = require("mysql2/promise");
 
-const RAIZ = path.join(__dirname, "../..");
-const rutaDb = path.resolve(RAIZ, process.env.DB_PATH || "database/negocio.db");
-fs.mkdirSync(path.dirname(rutaDb), { recursive: true });
-
-const db = new Database(rutaDb);
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
-
-// Crea las tablas que falten (no borra nada)
-db.exec(fs.readFileSync(path.join(RAIZ, "database/schema.sql"), "utf8"));
-
-const CONFIG_INICIAL = {
-  negocio_nombre: "Mi Negocio",
-  negocio_cuit: "",
-  negocio_direccion: "",
-  negocio_telefono: "",
-  punto_venta: "1",
-  proximo_numero: "1",
-  pie_ticket: "¡Gracias por su compra!",
-  stock_negativo: "0",
-  descuento_maximo: "100",
+const opciones = {
+  host: process.env.DB_HOST || "127.0.0.1",
+  port: Number(process.env.DB_PORT) || 3306,
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "negocio_db",
 };
-const insertarConfig = db.prepare("INSERT OR IGNORE INTO configuracion (clave, valor) VALUES (?, ?)");
-for (const [k, v] of Object.entries(CONFIG_INICIAL)) insertarConfig.run(k, v);
+// Zona horaria del negocio (Argentina por defecto): afecta NOW() y CURDATE()
+const zona = process.env.DB_TIMEZONE || "-03:00";
 
-// Primer arranque: usuario administrador que debe cambiar su clave
-if (db.prepare("SELECT COUNT(*) n FROM usuarios").get().n === 0) {
-  db.prepare(
-    "INSERT INTO usuarios (nombre, usuario, clave_hash, rol, debe_cambiar_clave) VALUES (?,?,?,?,1)"
-  ).run("Administrador", "admin", bcrypt.hashSync("admin123", 10), "admin");
-  console.log("👤 Usuario inicial creado → usuario: admin · clave: admin123 (te pedirá cambiarla)");
-}
+const pool = mysql.createPool({
+  ...opciones,
+  waitForConnections: true,
+  connectionLimit: 10,
+  charset: "utf8mb4",
+  decimalNumbers: true, // los DECIMAL llegan como número y no como texto
+  dateStrings: true,    // fechas como "2026-10-02 14:35:10" (sin conversiones de zona)
+});
+pool.pool.on("connection", (c) => c.query(`SET time_zone = '${zona}'`));
 
-db.rutaArchivo = rutaDb;
+// Mismas funciones para el pool y para una conexión dentro de una transacción
+const envolver = (ex) => ({
+  // Devuelve todas las filas
+  todos: async (sql, params) => (await ex.query(sql, params))[0],
+  // Devuelve la primera fila (o undefined)
+  uno: async (sql, params) => (await ex.query(sql, params))[0][0],
+  // INSERT / UPDATE / DELETE → { insertId, affectedRows }
+  run: async (sql, params) => (await ex.query(sql, params))[0],
+});
+
+const db = {
+  ...envolver(pool),
+  opciones,
+  pool,
+  // db.transaccion(async (t) => { ... }) → todo o nada. `t` tiene todos/uno/run.
+  async transaccion(fn) {
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      const resultado = await fn(envolver(conn));
+      await conn.commit();
+      return resultado;
+    } catch (e) {
+      await conn.rollback();
+      throw e;
+    } finally {
+      conn.release();
+    }
+  },
+  esDuplicado: (e) => e && e.code === "ER_DUP_ENTRY",
+  cerrar: () => pool.end(),
+};
+
 module.exports = db;

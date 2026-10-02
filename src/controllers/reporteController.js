@@ -11,20 +11,20 @@ function rango(req) {
   return { desde, hasta };
 }
 
-exports.ver = (req, res) => {
+exports.ver = async (req, res) => {
   const { desde, hasta } = rango(req);
-  res.render("reportes/index", { titulo: "Reportes", desde, hasta, r: reportes.resumen(desde, hasta), inv: reportes.inventario() });
+  res.render("reportes/index", { titulo: "Reportes", desde, hasta, r: await reportes.resumen(desde, hasta), inv: await reportes.inventario() });
 };
 
 const csv = (v) => `"${String(typeof v === "number" ? String(v).replace(".", ",") : v ?? "").replace(/"/g, '""')}"`;
 
 // Exporta las ventas del rango (abre directo en Excel)
-exports.ventasCsv = (req, res) => {
+exports.ventasCsv = async (req, res) => {
   const { desde, hasta } = rango(req);
-  const filas = db.prepare(`SELECT v.numero, v.fecha, v.estado, COALESCE(c.nombre,'Consumidor final') AS cliente, u.nombre AS cajero,
+  const filas = await db.todos(`SELECT v.numero, v.fecha, v.estado, COALESCE(c.nombre,'Consumidor final') AS cliente, u.nombre AS cajero,
       v.subtotal, v.descuento, v.total, v.pago_efectivo, v.pago_tarjeta, v.pago_transferencia
     FROM ventas v JOIN usuarios u ON u.id = v.usuario_id LEFT JOIN clientes c ON c.id = v.cliente_id
-    WHERE v.fecha_dia BETWEEN ? AND ? ORDER BY v.id`).all(desde, hasta);
+    WHERE v.fecha_dia BETWEEN ? AND ? ORDER BY v.id`, [desde, hasta]);
   const cab = ["Factura", "Fecha", "Estado", "Cliente", "Cajero", "Subtotal", "Descuento", "Total", "Efectivo", "Tarjeta", "Transferencia"];
   const cuerpo = filas.map((f) => Object.values(f).map(csv).join(";"));
   res.set({ "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="ventas_${desde}_a_${hasta}.csv"` });

@@ -21,8 +21,8 @@ const requiereRol = (...roles) => (req, res, next) => {
   res.status(403).render("error", { titulo: "Sin permiso", mensaje: "Tu usuario no tiene permiso para ver esta sección." });
 };
 
-function requiereCaja(req, res, next) {
-  const caja = cajaService.actual();
+async function requiereCaja(req, res, next) {
+  const caja = await cajaService.actual();
   if (!caja) {
     if (esApi(req)) return res.status(409).json({ ok: false, mensaje: "La caja está cerrada. Abrila para vender." });
     req.flash("aviso", "Primero tenés que abrir la caja");
