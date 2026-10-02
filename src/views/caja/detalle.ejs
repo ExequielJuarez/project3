@@ -1,0 +1,33 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab">
+  <div><h1>Caja #<%= caja.id %> <span class="insignia <%= caja.estado === 'abierta' ? 'insignia-ok' : 'insignia-neutra' %>"><%= caja.estado === 'abierta' ? 'Abierta' : 'Cerrada' %></span></h1>
+    <p>Abrió <%= caja.cajero %> el <%= fechaHora(caja.abierta_en) %><%= caja.cerrada_en ? ' · Cerró ' + caja.cerro + ' el ' + fechaHora(caja.cerrada_en) : '' %></p></div>
+  <div class="acciones no-imprimir"><a class="btn" href="/caja/historial">Volver</a><button class="btn btn-primario" type="button" data-imprimir><svg class="ico"><use href="#i-imprimir"/></svg>Imprimir cierre</button></div>
+</div>
+<div class="rejilla-eq">
+  <section class="tarjeta"><div class="tarjeta-cab"><h2>Resumen</h2></div><div class="tarjeta-cuerpo">
+    <div class="fila-datos"><span>Ventas (<%= r.cantVentas %>)</span><strong class="num"><%= precio(r.totalVentas) %></strong></div>
+    <div class="fila-datos"><span>· Efectivo</span><span class="num"><%= precio(r.efectivo) %></span></div>
+    <div class="fila-datos"><span>· Tarjeta</span><span class="num"><%= precio(r.tarjeta) %></span></div>
+    <div class="fila-datos"><span>· Transferencia</span><span class="num"><%= precio(r.transferencia) %></span></div>
+    <% if (r.anuladas) { %><div class="fila-datos"><span>Anuladas (<%= r.anuladas %>)</span><span class="num suave"><%= precio(r.totalAnuladas) %></span></div><% } %>
+    <hr style="border:0;border-top:1px solid var(--c-borde);margin:10px 0">
+    <%- include('_resumen', { r, esperado: caja.estado === 'cerrada' ? caja.monto_esperado : r.esperado }) %>
+    <% if (caja.estado === 'cerrada') { %>
+      <div class="fila-datos"><span>Efectivo contado</span><strong class="num"><%= precio(caja.monto_contado) %></strong></div>
+      <div class="diferencia <%= caja.diferencia === 0 ? 'cero' : (caja.diferencia < 0 ? 'falta' : 'sobra') %>"><%= caja.diferencia === 0 ? 'Caja cuadrada ✔' : (caja.diferencia < 0 ? 'Faltante: ' : 'Sobrante: ') + precio(Math.abs(caja.diferencia)) %></div>
+      <% if (caja.notas_cierre) { %><p class="suave" style="margin-top:10px">Obs.: <%= caja.notas_cierre %></p><% } %>
+    <% } %>
+  </div></section>
+  <div class="pila">
+    <section class="tarjeta"><div class="tarjeta-cab"><h2>Movimientos de efectivo</h2></div>
+      <% if (!movimientos.length) { %><p class="vacio">Sin movimientos.</p><% } else { %>
+      <ul class="lista-simple"><% movimientos.forEach(m => { %><li><span><%= m.concepto %><br><small class="suave"><%= fechaHora(m.creado_en) %></small></span>
+        <strong class="num <%= m.tipo === 'ingreso' ? 'positivo' : 'negativo' %>"><%= m.tipo === 'ingreso' ? '+' : '-' %> <%= precio(m.monto) %></strong></li><% }) %></ul><% } %></section>
+    <section class="tarjeta"><div class="tarjeta-cab"><h2>Ventas del turno</h2></div>
+      <% if (!ventas.length) { %><p class="vacio">Sin ventas.</p><% } else { %>
+      <ul class="lista-simple"><% ventas.forEach(v => { %><li><a href="/ventas/<%= v.id %>" class="mono"><%= v.numero %></a><span class="suave"><%= v.fecha.slice(11, 16) %></span>
+        <strong class="num <%= v.estado === 'anulada' ? 'suave' : '' %>"><%= v.estado === 'anulada' ? 'Anulada' : precio(v.total) %></strong></li><% }) %></ul><% } %></section>
+  </div>
+</div>
+<%- include('../partials/fin') %>

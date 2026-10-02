@@ -1,0 +1,35 @@
+<%- include('../partials/inicio', { layoutSimple: true }) %>
+<div class="barra-comp">
+  <button class="btn btn-primario" type="button" id="btn-imprimir"><svg class="ico"><use href="#i-imprimir"/></svg>Imprimir</button>
+  <button class="btn" type="button" id="btn-formato">Cambiar a ticket 80 mm</button>
+  <a class="btn" href="/ventas/<%= v.id %>">Volver</a>
+</div>
+<article class="hoja">
+  <header class="hoja-cab">
+    <div>
+      <h1><%= negocio.negocio_nombre %></h1>
+      <% if (negocio.negocio_cuit) { %><div>CUIT: <%= negocio.negocio_cuit %></div><% } %>
+      <% if (negocio.negocio_direccion) { %><div><%= negocio.negocio_direccion %></div><% } %>
+      <% if (negocio.negocio_telefono) { %><div>Tel: <%= negocio.negocio_telefono %></div><% } %>
+    </div>
+    <div class="tipo"><strong>COMPROBANTE DE VENTA</strong><span class="mono">Nº <%= v.numero %></span><br><span><%= fechaHora(v.fecha) %></span>
+      <div class="suave" style="font-size:.78rem">Documento no válido como factura fiscal</div></div>
+  </header>
+  <div style="margin-bottom:12px">Cliente: <strong><%= v.cliente || 'Consumidor final' %></strong><%= v.cliente_doc ? ' · ' + v.cliente_doc : '' %> · Atendió: <%= v.cajero %></div>
+  <% if (v.estado === 'anulada') { %><div class="sello-anulada">ANULADA</div><% } %>
+  <table>
+    <thead><tr><th>Descripción</th><th class="d">Cant.</th><th class="d">P. unit.</th><th class="d">Importe</th></tr></thead>
+    <tbody><% v.items.forEach(i => { %><tr><td><%= i.descripcion %></td><td class="d"><%= cant(i.cantidad) %></td><td class="d"><%= precio(i.precio_unitario) %></td><td class="d"><%= precio(i.subtotal) %></td></tr><% }) %></tbody>
+  </table>
+  <div class="hoja-tot">
+    <div><span>Subtotal</span><span><%= precio(v.subtotal) %></span></div>
+    <% if (v.descuento > 0) { %><div><span>Descuento</span><span>-<%= precio(v.descuento) %></span></div><% } %>
+    <div class="g"><span>TOTAL</span><span><%= precio(v.total) %></span></div>
+    <% if (v.pago_efectivo > 0) { %><div><span>Efectivo</span><span><%= precio(v.pago_efectivo + v.vuelto) %></span></div><% } %>
+    <% if (v.pago_tarjeta > 0) { %><div><span>Tarjeta</span><span><%= precio(v.pago_tarjeta) %></span></div><% } %>
+    <% if (v.pago_transferencia > 0) { %><div><span>Transferencia</span><span><%= precio(v.pago_transferencia) %></span></div><% } %>
+    <% if (v.vuelto > 0) { %><div><span>Vuelto</span><span><%= precio(v.vuelto) %></span></div><% } %>
+  </div>
+  <footer class="hoja-pie"><%= negocio.pie_ticket %></footer>
+</article>
+<%- include('../partials/fin', { layoutSimple: true }) %>

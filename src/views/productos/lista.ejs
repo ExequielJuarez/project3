@@ -1,0 +1,40 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab">
+  <div><h1>Productos</h1><p><%= productos.length %> resultado<%= productos.length === 1 ? '' : 's' %></p></div>
+  <% if (usuario.rol === 'admin') { %><div class="acciones"><a class="btn btn-primario" href="/productos/nuevo"><svg class="ico"><use href="#i-mas"/></svg>Nuevo producto</a></div><% } %>
+</div>
+<section class="tarjeta">
+  <form class="filtros" method="get" action="/productos">
+    <div class="campo ancho"><label for="q">Buscar</label><input id="q" type="search" name="q" value="<%= q %>" placeholder="Nombre, código de barras o código interno"></div>
+    <div class="campo"><label for="categoria">Categoría</label>
+      <select id="categoria" name="categoria"><option value="">Todas</option>
+        <% categorias.forEach(c => { %><option value="<%= c.id %>" <%= String(categoria) === String(c.id) ? 'selected' : '' %>><%= c.nombre %></option><% }) %></select></div>
+    <div class="campo"><label for="filtro">Mostrar</label>
+      <select id="filtro" name="filtro">
+        <option value="" <%= !filtro ? 'selected' : '' %>>Activos</option>
+        <option value="bajo" <%= filtro === 'bajo' ? 'selected' : '' %>>Stock bajo</option>
+        <option value="inactivos" <%= filtro === 'inactivos' ? 'selected' : '' %>>Inactivos</option>
+        <option value="todos" <%= filtro === 'todos' ? 'selected' : '' %>>Todos</option></select></div>
+    <button class="btn btn-primario"><svg class="ico"><use href="#i-buscar"/></svg>Filtrar</button>
+  </form>
+  <% if (!productos.length) { %><p class="vacio">No hay productos para mostrar.</p><% } else { %>
+  <div class="tabla-caja">
+    <table class="tabla tabla-responsive">
+      <thead><tr><th>Producto</th><th>Código</th><th>Categoría</th><% if (usuario.rol === 'admin') { %><th class="derecha">Costo</th><% } %><th class="derecha">Precio</th><th class="derecha">Stock</th><th></th></tr></thead>
+      <tbody>
+        <% productos.forEach(p => { %>
+        <tr class="<%= p.activo ? '' : 'fila-anulada' %>">
+          <td data-etiqueta="Producto"><strong><%= p.nombre %></strong></td>
+          <td data-etiqueta="Código" class="mono"><%= p.codigo_barras || p.codigo_interno || '—' %></td>
+          <td data-etiqueta="Categoría"><%= p.categoria || '—' %></td>
+          <% if (usuario.rol === 'admin') { %><td data-etiqueta="Costo" class="derecha num"><%= precio(p.costo) %></td><% } %>
+          <td data-etiqueta="Precio" class="derecha num negrita"><%= precio(p.precio) %></td>
+          <td data-etiqueta="Stock" class="derecha"><span class="insignia <%= p.stock <= 0 ? 'insignia-error' : (p.stock <= p.stock_minimo ? 'insignia-alerta' : 'insignia-ok') %>"><%= cant(p.stock) %> <%= p.unidad %></span></td>
+          <td class="acc"><% if (usuario.rol === 'admin') { %><a class="btn btn-chico" href="/productos/<%= p.id %>/editar"><svg class="ico"><use href="#i-editar"/></svg>Editar</a><% } %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div><% } %>
+</section>
+<%- include('../partials/fin') %>

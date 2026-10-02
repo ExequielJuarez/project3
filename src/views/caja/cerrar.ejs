@@ -1,0 +1,19 @@
+<%- include('../partials/inicio') %>
+<form class="tarjeta cuadro-caja" method="post" action="/caja/cerrar" id="form-cierre" data-esperado="<%= r.esperado %>" data-confirmar="¿Cerrar la caja? Ya no se podrá vender hasta abrir una nueva.">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="tarjeta-cab"><h2>Cerrar caja #<%= caja.id %></h2><span class="suave"><%= fechaHora(caja.abierta_en) %></span></div>
+  <div class="tarjeta-cuerpo">
+    <% if (error) { %><div class="aviso aviso-error"><svg class="ico"><use href="#i-alerta"/></svg><span><%= error %></span></div><% } %>
+    <div class="fila-datos"><span>Ventas (<%= r.cantVentas %>)</span><strong class="num"><%= precio(r.totalVentas) %></strong></div>
+    <div class="fila-datos"><span>· Tarjeta</span><span class="num"><%= precio(r.tarjeta) %></span></div>
+    <div class="fila-datos"><span>· Transferencia</span><span class="num"><%= precio(r.transferencia) %></span></div>
+    <hr style="border:0;border-top:1px solid var(--c-borde);margin:10px 0">
+    <%- include('_resumen', { r, esperado: r.esperado }) %>
+    <div class="campo" style="margin-top:20px"><label for="monto_contado">Efectivo contado en caja</label>
+      <div class="prefijo"><span>$</span><input id="monto_contado" class="monto-grande" name="monto_contado" type="text" inputmode="decimal" placeholder="0,00" required autofocus></div></div>
+    <div class="diferencia cero" id="diferencia" hidden></div>
+    <div class="campo" style="margin-top:14px"><label for="notas">Observaciones (opcional)</label><textarea id="notas" name="notas" rows="2"></textarea></div>
+    <div class="form-pie"><a class="btn" href="/caja">Volver</a><button class="btn btn-peligro btn-grande">Cerrar caja</button></div>
+  </div>
+</form>
+<%- include('../partials/fin', { script: 'cierre' }) %>

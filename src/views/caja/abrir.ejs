@@ -1,0 +1,14 @@
+<%- include('../partials/inicio') %>
+<form class="tarjeta cuadro-caja" method="post" action="/caja/abrir">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="tarjeta-cab"><h2>Abrir caja</h2><span class="suave"><%= fecha(hoy()) %></span></div>
+  <div class="tarjeta-cuerpo">
+    <p class="suave" style="margin-bottom:16px">Contá el efectivo que hay en la caja antes de empezar. Con este monto se controla el cierre del día.</p>
+    <% if (error) { %><div class="aviso aviso-error"><svg class="ico"><use href="#i-alerta"/></svg><span><%= error %></span></div><% } %>
+    <div class="campo"><label for="monto_inicial">Efectivo inicial en caja</label>
+      <div class="prefijo"><span>$</span><input id="monto_inicial" class="monto-grande" name="monto_inicial" type="text" inputmode="decimal" value="<%= sugerido || '' %>" placeholder="0,00" required autofocus></div>
+      <% if (sugerido > 0) { %><small>Sugerido: lo contado en el último cierre (<%= precio(sugerido) %>).</small><% } %></div>
+    <button class="btn btn-primario btn-grande btn-bloque" style="margin-top:18px">Abrir caja y empezar a vender</button>
+  </div>
+</form>
+<%- include('../partials/fin') %>

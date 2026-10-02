@@ -1,0 +1,5 @@
+<div class="fila-datos"><span>Efectivo inicial</span><span class="num"><%= precio(r.montoInicial) %></span></div>
+<div class="fila-datos"><span>Ventas en efectivo</span><span class="num positivo">+ <%= precio(r.efectivo) %></span></div>
+<div class="fila-datos"><span>Otros ingresos</span><span class="num positivo">+ <%= precio(r.ingresos) %></span></div>
+<div class="fila-datos"><span>Egresos / retiros</span><span class="num negativo">- <%= precio(r.egresos) %></span></div>
+<div class="fila-datos total"><span>Efectivo que debería haber</span><span class="num"><%= precio(esperado) %></span></div>

@@ -1,0 +1,33 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab">
+  <div><h1>Caja #<%= caja.id %> <span class="insignia insignia-ok">Abierta</span></h1><p>Abierta el <%= fechaHora(caja.abierta_en) %> por <%= caja.cajero %></p></div>
+  <div class="acciones"><a class="btn" href="/caja/historial">Historial</a><a class="btn btn-peligro" href="/caja/cerrar">Cerrar caja</a></div>
+</div>
+<div class="indicadores" style="margin-bottom:18px">
+  <div class="tarjeta indicador"><span class="rotulo">Ventas del turno</span><span class="valor num"><%= precio(r.totalVentas) %></span><span class="nota"><%= r.cantVentas %> venta<%= r.cantVentas === 1 ? '' : 's' %></span></div>
+  <div class="tarjeta indicador"><span class="rotulo">Efectivo</span><span class="valor num"><%= precio(r.efectivo) %></span></div>
+  <div class="tarjeta indicador"><span class="rotulo">Tarjeta</span><span class="valor num"><%= precio(r.tarjeta) %></span></div>
+  <div class="tarjeta indicador"><span class="rotulo">Transferencia</span><span class="valor num"><%= precio(r.transferencia) %></span></div>
+</div>
+<div class="rejilla-eq">
+  <section class="tarjeta"><div class="tarjeta-cab"><h2>Efectivo en caja</h2></div><div class="tarjeta-cuerpo"><%- include('_resumen', { r, esperado: r.esperado }) %></div></section>
+  <div class="pila">
+    <form class="tarjeta" method="post" action="/caja/movimientos">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="tarjeta-cab"><h2>Ingreso / retiro de efectivo</h2></div>
+      <div class="tarjeta-cuerpo form-grid">
+        <div class="campo c-6"><label for="tipo">Tipo</label><select id="tipo" name="tipo"><option value="egreso">Retiro (sale plata)</option><option value="ingreso">Ingreso (entra plata)</option></select></div>
+        <div class="campo c-6"><label for="monto">Monto</label><input id="monto" name="monto" type="text" inputmode="decimal" required></div>
+        <div class="campo"><label for="concepto">Concepto</label><input id="concepto" name="concepto" type="text" placeholder="Pago a proveedor, cambio, gastos…" required maxlength="120"></div>
+        <div class="campo"><button class="btn btn-primario">Registrar movimiento</button></div>
+      </div>
+    </form>
+    <section class="tarjeta"><div class="tarjeta-cab"><h2>Movimientos del turno</h2></div>
+      <% if (!movimientos.length) { %><p class="vacio">Sin movimientos.</p><% } else { %>
+      <ul class="lista-simple"><% movimientos.forEach(m => { %>
+        <li><span><%= m.concepto %><br><small class="suave"><%= m.creado_en.slice(11, 16) %> · <%= m.usuario %></small></span>
+          <strong class="num <%= m.tipo === 'ingreso' ? 'positivo' : 'negativo' %>"><%= m.tipo === 'ingreso' ? '+' : '-' %> <%= precio(m.monto) %></strong></li><% }) %></ul><% } %>
+    </section>
+  </div>
+</div>
+<%- include('../partials/fin') %>

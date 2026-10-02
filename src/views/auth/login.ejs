@@ -1,0 +1,14 @@
+<%- include('../partials/inicio', { layoutSimple: true, bodyClase: 'pagina-login' }) %>
+<form class="login-caja" method="post" action="/login" autocomplete="on">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <span class="logo"><svg class="ico"><use href="#i-caja"/></svg></span>
+  <h1>Iniciar sesión</h1>
+  <p class="sub">Sistema de gestión de negocio</p>
+  <% if (error) { %><div class="aviso aviso-error"><svg class="ico"><use href="#i-alerta"/></svg><span><%= error %></span></div><% } %>
+  <div class="form-grid">
+    <div class="campo"><label for="usuario">Usuario</label><input id="usuario" name="usuario" type="text" autocomplete="username" autocapitalize="none" required autofocus></div>
+    <div class="campo"><label for="clave">Clave</label><input id="clave" name="clave" type="password" autocomplete="current-password" required></div>
+  </div>
+  <button class="btn btn-primario btn-grande btn-bloque" style="margin-top:20px">Ingresar</button>
+</form>
+<%- include('../partials/fin', { layoutSimple: true }) %>

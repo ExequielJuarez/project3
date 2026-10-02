@@ -1,0 +1,28 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab"><div><h1>Ventas y facturas</h1><p><%= desde === hasta ? fecha(desde) : fecha(desde) + ' al ' + fecha(hasta) %> · <%= ventas.length %> comprobante<%= ventas.length === 1 ? '' : 's' %> · Total <strong><%= precio(total) %></strong></p></div></div>
+<section class="tarjeta">
+  <form class="filtros" method="get" action="/ventas">
+    <div class="campo"><label for="desde">Desde</label><input id="desde" type="date" name="desde" value="<%= desde %>"></div>
+    <div class="campo"><label for="hasta">Hasta</label><input id="hasta" type="date" name="hasta" value="<%= hasta %>"></div>
+    <div class="campo"><label for="estado">Estado</label><select id="estado" name="estado">
+      <option value="">Todas</option><option value="completada" <%= estado === 'completada' ? 'selected' : '' %>>Completadas</option><option value="anulada" <%= estado === 'anulada' ? 'selected' : '' %>>Anuladas</option></select></div>
+    <div class="campo ancho"><label for="q">Nº de factura o cliente</label><input id="q" type="search" name="q" value="<%= q %>"></div>
+    <button class="btn btn-primario"><svg class="ico"><use href="#i-buscar"/></svg>Buscar</button>
+  </form>
+  <% if (!ventas.length) { %><p class="vacio">No hay ventas en este período.</p><% } else { %>
+  <div class="tabla-caja"><table class="tabla tabla-responsive">
+    <thead><tr><th>Factura</th><th>Fecha</th><th>Cliente</th><th>Cajero</th><th>Pago</th><th class="derecha">Total</th><th></th></tr></thead>
+    <tbody><% ventas.forEach(v => { %>
+      <tr class="<%= v.estado === 'anulada' ? 'fila-anulada' : '' %>">
+        <td data-etiqueta="Factura" class="mono"><%= v.numero %></td>
+        <td data-etiqueta="Fecha"><%= fechaHora(v.fecha) %></td>
+        <td data-etiqueta="Cliente"><%= v.cliente || 'Consumidor final' %></td>
+        <td data-etiqueta="Cajero"><%= v.cajero %></td>
+        <td data-etiqueta="Pago"><% if (v.pago_efectivo > 0) { %><span class="insignia insignia-ok">Efectivo</span> <% } if (v.pago_tarjeta > 0) { %><span class="insignia insignia-info">Tarjeta</span> <% } if (v.pago_transferencia > 0) { %><span class="insignia insignia-neutra">Transf.</span><% } %>
+          <% if (v.estado === 'anulada') { %><span class="insignia insignia-error">Anulada</span><% } %></td>
+        <td data-etiqueta="Total" class="derecha num negrita"><%= precio(v.total) %></td>
+        <td class="acc"><a class="btn btn-chico" href="/ventas/<%= v.id %>">Ver</a></td>
+      </tr><% }) %></tbody>
+  </table></div><% } %>
+</section>
+<%- include('../partials/fin') %>

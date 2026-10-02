@@ -1,0 +1,48 @@
+<%- include('partials/inicio') %>
+<div class="pagina-cab">
+  <div><h1>Hola, <%= usuario.nombre.split(' ')[0] %> 👋</h1><p><%= fecha(hoy()) %> · <%= cajaActual ? 'Caja abierta desde las ' + cajaActual.abierta_en.slice(11, 16) : 'La caja está cerrada' %></p></div>
+</div>
+
+<% if (!caja) { %>
+  <div class="aviso aviso-aviso"><svg class="ico"><use href="#i-alerta"/></svg><span>Para empezar a vender, abrí la caja indicando cuánto efectivo hay.</span>
+    <a class="btn btn-primario btn-chico" style="margin-left:auto" href="/caja/abrir">Abrir caja</a></div>
+<% } %>
+
+<div class="atajos" style="margin-bottom:18px">
+  <a class="atajo atajo-primario" href="/pos"><svg class="ico"><use href="#i-pos"/></svg>Nueva venta</a>
+  <a class="atajo" href="/precios"><svg class="ico"><use href="#i-precio"/></svg>Consultar precio</a>
+  <a class="atajo" href="/productos"><svg class="ico"><use href="#i-productos"/></svg>Productos</a>
+  <a class="atajo" href="/ventas"><svg class="ico"><use href="#i-ventas"/></svg>Ventas de hoy</a>
+</div>
+
+<div class="indicadores" style="margin-bottom:18px">
+  <div class="tarjeta indicador"><span class="rotulo">Vendido hoy</span><span class="valor num"><%= precio(deHoy.total) %></span><span class="nota"><%= deHoy.cant %> venta<%= deHoy.cant === 1 ? '' : 's' %></span></div>
+  <% if (resumenCaja) { %>
+    <div class="tarjeta indicador"><span class="rotulo">Efectivo esperado en caja</span><span class="valor num"><%= precio(resumenCaja.esperado) %></span><span class="nota">Inicial <%= precio(resumenCaja.montoInicial) %></span></div>
+    <div class="tarjeta indicador"><span class="rotulo">Tarjeta + transferencia</span><span class="valor num"><%= precio(resumenCaja.tarjeta + resumenCaja.transferencia) %></span><span class="nota">Turno actual</span></div>
+  <% } %>
+  <div class="tarjeta indicador"><span class="rotulo">Productos activos</span><span class="valor num"><%= cantProductos %></span><span class="nota"><%= stockBajo.length %> con stock bajo</span></div>
+</div>
+
+<div class="rejilla-eq">
+  <section class="tarjeta">
+    <div class="tarjeta-cab"><h2>Últimas ventas de hoy</h2><a href="/ventas" class="btn btn-chico">Ver todas</a></div>
+    <% if (!ultimas.length) { %><p class="vacio">Todavía no hay ventas hoy.</p><% } else { %>
+    <ul class="lista-simple">
+      <% ultimas.forEach(v => { %>
+        <li><a href="/ventas/<%= v.id %>"><span class="mono"><%= v.numero %></span> <small class="suave"><%= v.fecha.slice(11, 16) %></small></a>
+          <span class="num negrita <%= v.estado === 'anulada' ? 'suave' : '' %>"><%= v.estado === 'anulada' ? 'Anulada' : precio(v.total) %></span></li>
+      <% }) %>
+    </ul><% } %>
+  </section>
+  <section class="tarjeta">
+    <div class="tarjeta-cab"><h2>Stock bajo</h2><a href="/productos?filtro=bajo" class="btn btn-chico">Ver todos</a></div>
+    <% if (!stockBajo.length) { %><p class="vacio">Todo el stock está en orden ✔</p><% } else { %>
+    <ul class="lista-simple">
+      <% stockBajo.forEach(p => { %>
+        <li><span><%= p.nombre %></span><span class="insignia <%= p.stock <= 0 ? 'insignia-error' : 'insignia-alerta' %>"><%= cant(p.stock) %> <%= p.unidad %></span></li>
+      <% }) %>
+    </ul><% } %>
+  </section>
+</div>
+<%- include('partials/fin') %>

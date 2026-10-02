@@ -1,0 +1,51 @@
+/* ===== Páginas generales ===== */
+.rejilla-2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px; align-items: start; }
+.rejilla-eq { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+@media (max-width: 960px) { .rejilla-2, .rejilla-eq { grid-template-columns: 1fr; } }
+
+.atajos { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.atajo { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 12px; background: var(--c-superficie); border: 1px solid var(--c-borde); border-radius: var(--radio); font-weight: 600; color: var(--c-texto); box-shadow: var(--sombra); text-align: center; }
+.atajo:hover { border-color: var(--c-marca); text-decoration: none; transform: translateY(-1px); }
+.atajo .ico { width: 30px; height: 30px; color: var(--c-marca); }
+.atajo-primario { background: var(--c-marca); color: #fff; border-color: var(--c-marca); }
+.atajo-primario .ico { color: #fff; }
+
+.barras { display: grid; gap: 10px; }
+.barra-fila { display: grid; grid-template-columns: 110px 1fr auto; gap: 10px; align-items: center; font-size: .88rem; }
+.barra-fila .pista { height: 10px; background: #e2e8f0; border-radius: 99px; overflow: hidden; }
+.barra-fila .relleno { height: 100%; background: var(--c-marca); border-radius: 99px; width: var(--ancho, 0%); }
+.barra-fila .relleno.c2 { background: #2563eb; } .barra-fila .relleno.c3 { background: #d97706; }
+@media (max-width: 480px) { .barra-fila { grid-template-columns: 84px 1fr auto; } }
+
+.lista-simple { list-style: none; margin: 0; padding: 0; }
+.lista-simple li { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 11px 18px; border-bottom: 1px solid var(--c-borde); }
+.lista-simple li:last-child { border-bottom: 0; }
+
+.cuadro-caja { max-width: 560px; margin: 4vh auto 0; }
+.cuadro-caja .monto-grande { font-size: 1.6rem; min-height: 60px; font-weight: 700; text-align: center; }
+
+.diferencia { padding: 14px; border-radius: var(--radio-s); text-align: center; font-weight: 700; font-size: 1.1rem; margin-top: 14px; }
+.diferencia.cero { background: var(--c-ok-bg); color: var(--c-ok); }
+.diferencia.falta { background: var(--c-error-bg); color: var(--c-error); }
+.diferencia.sobra { background: var(--c-alerta-bg); color: var(--c-alerta); }
+
+/* Login */
+.pagina-login { display: grid; place-items: center; padding: 20px; background: linear-gradient(160deg, #0f766e 0%, #0f172a 70%); min-height: 100dvh; }
+.login-caja { width: 100%; max-width: 400px; background: #fff; border-radius: 18px; padding: 30px 26px; box-shadow: var(--sombra-l); }
+.login-caja .logo { width: 54px; height: 54px; margin: 0 auto 14px; border-radius: 14px; }
+.login-caja .logo .ico { width: 28px; height: 28px; color: #fff; }
+.login-caja h1 { text-align: center; font-size: 1.35rem; }
+.login-caja .sub { text-align: center; color: var(--c-texto-2); margin: 4px 0 22px; }
+
+/* Imagen de movimientos de stock */
+.mov-pos { color: var(--c-ok); font-weight: 600; } .mov-neg { color: var(--c-error); font-weight: 600; }
+
+/* Compras */
+.compra-total { font-size: 1.5rem; font-weight: 700; }
+
+@media print {
+  .lateral, .topbar, .velo, .no-imprimir { display: none !important; }
+  .contenido { margin: 0; padding: 0; max-width: none; }
+  body { background: #fff; }
+  .tarjeta { box-shadow: none; }
+}

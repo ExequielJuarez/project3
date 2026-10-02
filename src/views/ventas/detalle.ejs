@@ -1,0 +1,38 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab">
+  <div><h1>Factura <span class="mono"><%= v.numero %></span> <% if (v.estado === 'anulada') { %><span class="insignia insignia-error">Anulada</span><% } %></h1><p><%= fechaHora(v.fecha) %> · Cajero: <%= v.cajero %> · <%= v.cliente || 'Consumidor final' %></p></div>
+  <div class="acciones"><a class="btn" href="/ventas">Volver</a><a class="btn btn-primario" target="_blank" rel="noopener" href="/ventas/<%= v.id %>/imprimir"><svg class="ico"><use href="#i-imprimir"/></svg>Imprimir</a></div>
+</div>
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <div class="tabla-caja"><table class="tabla tabla-responsive">
+      <thead><tr><th>Producto</th><th class="derecha">Cant.</th><th class="derecha">Precio</th><th class="derecha">Subtotal</th></tr></thead>
+      <tbody><% v.items.forEach(i => { %>
+        <tr><td data-etiqueta="Producto"><%= i.descripcion %></td><td data-etiqueta="Cant." class="derecha num"><%= cant(i.cantidad) %></td>
+          <td data-etiqueta="Precio" class="derecha num"><%= precio(i.precio_unitario) %></td><td data-etiqueta="Subtotal" class="derecha num negrita"><%= precio(i.subtotal) %></td></tr><% }) %></tbody>
+    </table></div>
+  </section>
+  <div class="pila">
+    <section class="tarjeta tarjeta-cuerpo">
+      <div class="fila-datos"><span>Subtotal</span><span class="num"><%= precio(v.subtotal) %></span></div>
+      <% if (v.descuento > 0) { %><div class="fila-datos"><span>Descuento</span><span class="num">-<%= precio(v.descuento) %></span></div><% } %>
+      <div class="fila-datos total"><span>Total</span><span class="num"><%= precio(v.total) %></span></div>
+      <hr style="border:0;border-top:1px solid var(--c-borde);margin:14px 0">
+      <div class="fila-datos"><span>Efectivo</span><span class="num"><%= precio(v.pago_efectivo) %></span></div>
+      <div class="fila-datos"><span>Tarjeta</span><span class="num"><%= precio(v.pago_tarjeta) %></span></div>
+      <div class="fila-datos"><span>Transferencia</span><span class="num"><%= precio(v.pago_transferencia) %></span></div>
+      <% if (v.vuelto > 0) { %><div class="fila-datos"><span>Vuelto entregado</span><span class="num"><%= precio(v.vuelto) %></span></div><% } %>
+      <% if (v.notas) { %><p class="suave" style="margin-top:10px">Nota: <%= v.notas %></p><% } %>
+    </section>
+    <% if (v.estado === 'anulada') { %>
+      <section class="tarjeta tarjeta-cuerpo"><h3>Anulación</h3><p class="suave"><%= fechaHora(v.anulada_en) %></p><p>Motivo: <%= v.motivo_anulacion %></p></section>
+    <% } else if (usuario.rol === 'admin') { %>
+      <form class="tarjeta tarjeta-cuerpo" method="post" action="/ventas/<%= v.id %>/anular" data-confirmar="¿Anular esta venta? El stock de los productos vuelve a sumarse.">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div class="campo"><label for="motivo">Anular venta</label><input id="motivo" name="motivo" type="text" placeholder="Motivo (obligatorio)" required minlength="3"></div>
+        <button class="btn btn-peligro" style="margin-top:10px">Anular y devolver stock</button>
+      </form>
+    <% } %>
+  </div>
+</div>
+<%- include('../partials/fin') %>

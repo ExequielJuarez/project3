@@ -1,0 +1,84 @@
+<%- include('../partials/inicio') %>
+<div class="pos" id="pos" data-stock-negativo="<%= negocio.stock_negativo %>" data-descuento-max="<%= negocio.descuento_maximo %>">
+  <section class="pos-izq">
+    <div class="tarjeta pos-escaner">
+      <div class="escaner-fila">
+        <input id="entrada" type="text" inputmode="search" autocomplete="off" autocapitalize="none" spellcheck="false"
+               placeholder="Escaneá el código o escribí código / nombre…" aria-label="Código de barras, código manual o nombre">
+        <button class="btn btn-primario" type="button" id="btn-agregar"><svg class="ico"><use href="#i-mas"/></svg><span>Agregar</span></button>
+      </div>
+      <div class="escaner-ayuda">
+        <span><kbd>Enter</kbd> agrega el producto</span>
+        <span>Varias veces el mismo código = suma cantidad</span>
+        <span><kbd>F4</kbd> cobrar</span>
+        <span><kbd>Esc</kbd> limpiar búsqueda</span>
+      </div>
+      <div class="resultados"><div class="resultados-lista" id="resultados" hidden></div></div>
+    </div>
+
+    <div class="tarjeta pos-lista">
+      <div class="tarjeta-cab"><h2>Detalle de la venta <span class="insignia insignia-neutra" id="cant-items">0</span></h2>
+        <button class="btn btn-chico btn-suave" type="button" id="btn-vaciar"><svg class="ico"><use href="#i-papelera"/></svg>Vaciar</button></div>
+      <div class="pos-lista-cuerpo" id="lineas">
+        <div class="pos-vacio"><svg class="ico"><use href="#i-precio"/></svg><p>Escaneá un producto para empezar</p></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="pos-der">
+    <div class="tarjeta pos-total">
+      <div class="pos-cliente">
+        <select id="cliente" aria-label="Cliente">
+          <option value="">Consumidor final</option>
+          <% clientes.forEach(c => { %><option value="<%= c.id %>"><%= c.nombre %><%= c.documento ? ' · ' + c.documento : '' %></option><% }) %>
+        </select>
+      </div>
+      <div class="fila"><span>Subtotal</span><strong class="num" id="subtotal">$ 0,00</strong></div>
+      <div class="fila"><span>Descuento ($)</span>
+        <div class="pos-descuento"><input id="descuento" type="text" inputmode="decimal" value="0" aria-label="Descuento en pesos"></div></div>
+      <div class="fila gran-total-fila"><span>TOTAL</span><span class="gran-total num" id="total">$ 0,00</span></div>
+      <div class="pos-botones">
+        <button class="btn btn-grande" type="button" id="btn-cancelar">Cancelar</button>
+        <button class="btn btn-primario btn-grande" type="button" id="btn-cobrar" disabled>Cobrar (F4)</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- Cobro -->
+<div class="modal-fondo" id="modal-cobro" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cobro-titulo">
+    <div class="modal-cab"><h2 id="cobro-titulo">Cobrar venta</h2><button class="btn-icono" type="button" data-cerrar-modal aria-label="Cerrar"><svg class="ico"><use href="#i-cerrar"/></svg></button></div>
+    <div class="modal-cuerpo">
+      <div class="fila-datos total"><span>Total a cobrar</span><span class="num" id="cobro-total">$ 0,00</span></div>
+      <div class="metodos" style="margin-top:16px">
+        <div class="metodo-fila"><label for="pago-efectivo">Efectivo</label><input id="pago-efectivo" type="text" inputmode="decimal" value="" placeholder="0,00"><button class="btn" type="button" data-completar="efectivo">Todo efectivo</button></div>
+        <div class="metodo-fila"><label for="pago-tarjeta">Tarjeta</label><input id="pago-tarjeta" type="text" inputmode="decimal" value="" placeholder="0,00"><button class="btn" type="button" data-completar="tarjeta">Todo tarjeta</button></div>
+        <div class="metodo-fila"><label for="pago-transferencia">Transferencia</label><input id="pago-transferencia" type="text" inputmode="decimal" value="" placeholder="0,00"><button class="btn" type="button" data-completar="transferencia">Todo transf.</button></div>
+      </div>
+      <div id="cobro-estado"></div>
+      <div class="campo" style="margin-top:14px"><label for="notas">Nota (opcional)</label><input id="notas" type="text" maxlength="200"></div>
+    </div>
+    <div class="modal-pie">
+      <button class="btn" type="button" data-cerrar-modal>Volver</button>
+      <button class="btn btn-primario btn-grande" type="button" id="btn-confirmar" disabled>Confirmar venta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Venta registrada -->
+<div class="modal-fondo" id="modal-exito" hidden>
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-cuerpo exito">
+      <div class="tilde"><svg class="ico"><use href="#i-ok"/></svg></div>
+      <h2>Venta registrada</h2>
+      <p class="suave mono" id="exito-numero"></p>
+      <div id="exito-vuelto-caja" hidden><p class="suave">Entregar de vuelto</p><div class="vuelto" id="exito-vuelto"></div></div>
+    </div>
+    <div class="modal-pie" style="justify-content:center">
+      <a class="btn" id="exito-imprimir" href="#" target="_blank" rel="noopener"><svg class="ico"><use href="#i-imprimir"/></svg>Imprimir factura</a>
+      <button class="btn btn-primario btn-grande" type="button" id="exito-nueva">Nueva venta</button>
+    </div>
+  </div>
+</div>
+<%- include('../partials/fin') %>

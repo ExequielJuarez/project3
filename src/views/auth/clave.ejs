@@ -1,0 +1,16 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab"><div><h1>Cambiar mi clave</h1>
+  <% if (usuario.debeCambiarClave) { %><p>Por seguridad tenés que elegir una clave nueva antes de continuar.</p><% } %></div></div>
+<form class="tarjeta" method="post" action="/perfil/clave" style="max-width:520px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="tarjeta-cuerpo">
+    <% if (error) { %><div class="aviso aviso-error"><svg class="ico"><use href="#i-alerta"/></svg><span><%= error %></span></div><% } %>
+    <div class="form-grid">
+      <div class="campo"><label for="actual">Clave actual</label><input id="actual" name="actual" type="password" autocomplete="current-password" required></div>
+      <div class="campo"><label for="nueva">Clave nueva (mínimo 6 caracteres)</label><input id="nueva" name="nueva" type="password" autocomplete="new-password" minlength="6" required></div>
+      <div class="campo"><label for="repetir">Repetir clave nueva</label><input id="repetir" name="repetir" type="password" autocomplete="new-password" required></div>
+    </div>
+    <div class="form-pie"><button class="btn btn-primario">Guardar clave</button></div>
+  </div>
+</form>
+<%- include('../partials/fin') %>

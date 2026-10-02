@@ -1,0 +1,34 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab"><div><h1><%= titulo %></h1><p><%= filas.length %> registro<%= filas.length === 1 ? '' : 's' %></p></div></div>
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <form class="filtros" method="get" action="<%= ruta %>">
+      <div class="campo ancho"><label for="q">Buscar</label><input id="q" type="search" name="q" value="<%= q %>"></div>
+      <button class="btn btn-primario"><svg class="ico"><use href="#i-buscar"/></svg>Buscar</button>
+    </form>
+    <% if (!filas.length) { %><p class="vacio">No hay registros.</p><% } else { %>
+    <div class="tabla-caja"><table class="tabla tabla-responsive">
+      <thead><tr><% campos.forEach(c => { %><th><%= c.etiqueta %></th><% }) %><th></th></tr></thead>
+      <tbody><% filas.forEach(f => { %><tr>
+        <% campos.forEach((c, i) => { %><td data-etiqueta="<%= c.etiqueta %>" class="<%= i === 0 ? 'negrita' : '' %>"><%= f[c.nombre] || '—' %></td><% }) %>
+        <td class="acc">
+          <% if (usuario.rol === 'admin' || ruta === '/clientes') { %><a class="btn btn-chico" href="<%= ruta %>?editar=<%= f.id %>"><svg class="ico"><use href="#i-editar"/></svg>Editar</a><% } %>
+          <% if (usuario.rol === 'admin') { %><form method="post" action="<%= ruta %>/<%= f.id %>?_method=DELETE" style="display:inline" data-confirmar="¿Eliminar este registro?">
+            <input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn-icono peligro" aria-label="Eliminar"><svg class="ico"><use href="#i-papelera"/></svg></button></form><% } %>
+        </td></tr><% }) %></tbody>
+    </table></div><% } %>
+  </section>
+  <% const puedeEscribir = usuario.rol === 'admin' || ruta === '/clientes'; if (puedeEscribir) { %>
+  <form class="tarjeta" method="post" action="<%= editando ? ruta + '/' + editando.id + '?_method=PUT' : ruta %>">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div class="tarjeta-cab"><h2><%= editando ? 'Editar' : 'Agregar' %> <%= singular.replace(/^(un|una) /, '') %></h2></div>
+    <div class="tarjeta-cuerpo">
+      <% if (error) { %><div class="aviso aviso-error"><svg class="ico"><use href="#i-alerta"/></svg><span><%= error %></span></div><% } %>
+      <div class="form-grid"><% campos.forEach(c => { %>
+        <div class="campo"><label for="f-<%= c.nombre %>"><%= c.etiqueta %><%= c.requerido ? ' *' : '' %></label>
+          <input id="f-<%= c.nombre %>" name="<%= c.nombre %>" type="<%= c.tipo || 'text' %>" value="<%= editando ? (editando[c.nombre] || '') : '' %>" <%= c.requerido ? 'required' : '' %>></div><% }) %></div>
+      <div class="form-pie"><% if (editando) { %><a class="btn" href="<%= ruta %>">Cancelar</a><% } %><button class="btn btn-primario">Guardar</button></div>
+    </div>
+  </form><% } %>
+</div>
+<%- include('../partials/fin') %>

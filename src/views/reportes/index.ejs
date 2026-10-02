@@ -1,0 +1,49 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab"><div><h1>Reportes</h1><p><%= fecha(desde) %> al <%= fecha(hasta) %></p></div>
+  <a class="btn" href="/reportes/ventas.csv?desde=<%= desde %>&hasta=<%= hasta %>"><svg class="ico"><use href="#i-descargar"/></svg>Exportar ventas (Excel)</a></div>
+<section class="tarjeta" style="margin-bottom:18px"><form class="filtros" method="get" action="/reportes" style="border:0">
+  <div class="campo"><label for="desde">Desde</label><input id="desde" type="date" name="desde" value="<%= desde %>"></div>
+  <div class="campo"><label for="hasta">Hasta</label><input id="hasta" type="date" name="hasta" value="<%= hasta %>"></div>
+  <button class="btn btn-primario">Ver reporte</button></form></section>
+
+<div class="indicadores" style="margin-bottom:18px">
+  <div class="tarjeta indicador"><span class="rotulo">Ventas</span><span class="valor num"><%= precio(r.totales.total) %></span><span class="nota"><%= r.totales.cant %> comprobantes</span></div>
+  <div class="tarjeta indicador"><span class="rotulo">Ganancia bruta</span><span class="valor num"><%= precio(r.ganancia) %></span><span class="nota">Precio − costo</span></div>
+  <div class="tarjeta indicador"><span class="rotulo">Ticket promedio</span><span class="valor num"><%= precio(r.ticketPromedio) %></span></div>
+  <div class="tarjeta indicador"><span class="rotulo">Descuentos</span><span class="valor num"><%= precio(r.totales.descuentos) %></span></div>
+</div>
+
+<%
+  const metodos = [['Efectivo', r.totales.efectivo, ''], ['Tarjeta', r.totales.tarjeta, 'c2'], ['Transferencia', r.totales.transferencia, 'c3']];
+  const maxM = Math.max(...metodos.map(m => m[1]), 1);
+  const maxH = Math.max(...r.porHora.map(h => h.total), 1);
+%>
+<div class="rejilla-eq" style="margin-bottom:18px">
+  <section class="tarjeta"><div class="tarjeta-cab"><h2>Por método de pago</h2></div><div class="tarjeta-cuerpo barras">
+    <% metodos.forEach(m => { %><div class="barra-fila"><span><%= m[0] %></span><div class="pista"><div class="relleno <%= m[2] %>" data-ancho="<%= Math.round(m[1] / maxM * 100) %>"></div></div><strong class="num"><%= precio(m[1]) %></strong></div><% }) %>
+  </div></section>
+  <section class="tarjeta"><div class="tarjeta-cab"><h2>Horas con más ventas</h2></div><div class="tarjeta-cuerpo barras">
+    <% if (!r.porHora.length) { %><p class="vacio">Sin datos.</p><% } %>
+    <% r.porHora.forEach(h => { %><div class="barra-fila"><span><%= h.hora %>:00 hs</span><div class="pista"><div class="relleno" data-ancho="<%= Math.round(h.total / maxH * 100) %>"></div></div><strong class="num"><%= precio(h.total) %></strong></div><% }) %>
+  </div></section>
+</div>
+
+<div class="rejilla-eq">
+  <section class="tarjeta"><div class="tarjeta-cab"><h2>Registro diario de ventas</h2></div>
+    <% if (!r.porDia.length) { %><p class="vacio">Sin ventas en el período.</p><% } else { %>
+    <div class="tabla-caja"><table class="tabla tabla-responsive"><thead><tr><th>Día</th><th class="derecha">Ventas</th><th class="derecha">Efectivo</th><th class="derecha">Tarjeta</th><th class="derecha">Transf.</th><th class="derecha">Total</th></tr></thead>
+      <tbody><% r.porDia.forEach(d => { %><tr><td data-etiqueta="Día"><a href="/ventas?desde=<%= d.fecha_dia %>&hasta=<%= d.fecha_dia %>"><%= fecha(d.fecha_dia) %></a></td><td data-etiqueta="Ventas" class="derecha"><%= d.cant_ventas %></td>
+        <td data-etiqueta="Efectivo" class="derecha num"><%= precio(d.efectivo) %></td><td data-etiqueta="Tarjeta" class="derecha num"><%= precio(d.tarjeta) %></td><td data-etiqueta="Transf." class="derecha num"><%= precio(d.transferencia) %></td>
+        <td data-etiqueta="Total" class="derecha num negrita"><%= precio(d.total_ventas) %></td></tr><% }) %></tbody></table></div><% } %></section>
+  <div class="pila">
+    <section class="tarjeta"><div class="tarjeta-cab"><h2>Más vendidos</h2></div>
+      <% if (!r.top.length) { %><p class="vacio">Sin datos.</p><% } else { %>
+      <ul class="lista-simple"><% r.top.forEach((t, i) => { %><li><span><%= i + 1 %>. <%= t.descripcion %> <small class="suave">× <%= cant(t.cantidad) %></small></span><strong class="num"><%= precio(t.total) %></strong></li><% }) %></ul><% } %></section>
+    <section class="tarjeta"><div class="tarjeta-cab"><h2>Valor del inventario</h2></div><div class="tarjeta-cuerpo">
+      <div class="fila-datos"><span>Productos activos</span><strong><%= inv.productos %></strong></div>
+      <div class="fila-datos"><span>A precio de costo</span><strong class="num"><%= precio(inv.valor_costo) %></strong></div>
+      <div class="fila-datos"><span>A precio de venta</span><strong class="num"><%= precio(inv.valor_venta) %></strong></div>
+      <div class="fila-datos"><span>Con stock bajo</span><strong><%= inv.bajos || 0 %></strong></div></div></section>
+  </div>
+</div>
+<%- include('../partials/fin', { script: 'reportes' }) %>

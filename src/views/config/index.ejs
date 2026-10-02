@@ -1,0 +1,25 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab"><div><h1>Configuración</h1><p>Datos que salen en las facturas y reglas de venta.</p></div></div>
+<div class="rejilla-2">
+<form class="tarjeta" method="post" action="/configuracion">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <div class="tarjeta-cuerpo">
+    <div class="form-grid">
+      <div class="campo"><label for="negocio_nombre">Nombre del negocio</label><input id="negocio_nombre" name="negocio_nombre" type="text" value="<%= c.negocio_nombre %>" required></div>
+      <div class="campo c-6"><label for="negocio_cuit">CUIT</label><input id="negocio_cuit" name="negocio_cuit" type="text" value="<%= c.negocio_cuit %>"></div>
+      <div class="campo c-6"><label for="negocio_telefono">Teléfono</label><input id="negocio_telefono" name="negocio_telefono" type="text" value="<%= c.negocio_telefono %>"></div>
+      <div class="campo"><label for="negocio_direccion">Dirección</label><input id="negocio_direccion" name="negocio_direccion" type="text" value="<%= c.negocio_direccion %>"></div>
+      <div class="campo"><label for="pie_ticket">Mensaje al pie de la factura</label><input id="pie_ticket" name="pie_ticket" type="text" value="<%= c.pie_ticket %>"></div>
+      <div class="campo c-6"><label for="punto_venta">Punto de venta</label><input id="punto_venta" name="punto_venta" type="number" min="1" value="<%= c.punto_venta %>"><small>Próxima factura: <%= String(c.punto_venta).padStart(4, '0') %>-<%= String(c.proximo_numero).padStart(8, '0') %></small></div>
+      <div class="campo c-6"><label for="descuento_maximo">Descuento máximo permitido (%)</label><input id="descuento_maximo" name="descuento_maximo" type="number" min="0" max="100" value="<%= c.descuento_maximo %>"></div>
+      <div class="campo"><label class="check"><input type="checkbox" name="stock_negativo" value="1" <%= c.stock_negativo === '1' ? 'checked' : '' %>>Permitir vender sin stock (el stock quedará negativo)</label></div>
+    </div>
+    <div class="form-pie"><button class="btn btn-primario">Guardar cambios</button></div>
+  </div>
+</form>
+<section class="tarjeta"><div class="tarjeta-cab"><h2>Copia de seguridad</h2></div><div class="tarjeta-cuerpo">
+  <p class="suave" style="margin-bottom:14px">Descargá una copia completa de la base de datos (ventas, productos, cajas). Guardala en un pendrive o en la nube con frecuencia.</p>
+  <a class="btn btn-primario" href="/configuracion/respaldo"><svg class="ico"><use href="#i-descargar"/></svg>Descargar respaldo</a>
+</div></section>
+</div>
+<%- include('../partials/fin') %>

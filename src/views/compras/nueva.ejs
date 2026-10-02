@@ -1,0 +1,24 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab"><div><h1>Ingreso de mercadería</h1><p>Escaneá o buscá los productos que llegaron e indicá cantidad y costo.</p></div><a class="btn" href="/compras">Volver</a></div>
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <div class="tarjeta-cuerpo">
+      <div class="campo"><label for="entrada">Producto (código o nombre)</label>
+        <input id="entrada" type="text" autocomplete="off" inputmode="search" placeholder="Escaneá o escribí…" autofocus></div>
+      <div class="resultados"><div class="resultados-lista" id="resultados" hidden></div></div>
+    </div>
+    <div class="tabla-caja"><table class="tabla">
+      <thead><tr><th>Producto</th><th class="derecha">Cantidad</th><th class="derecha">Costo unit.</th><th class="derecha">Precio venta</th><th class="derecha">Subtotal</th><th></th></tr></thead>
+      <tbody id="lineas"></tbody>
+    </table><p class="vacio" id="vacio">Agregá productos a la compra.</p></div>
+  </section>
+  <section class="tarjeta"><div class="tarjeta-cuerpo form-grid">
+    <div class="campo"><label for="proveedor">Proveedor</label><select id="proveedor"><option value="">Sin especificar</option>
+      <% proveedores.forEach(p => { %><option value="<%= p.id %>"><%= p.nombre %></option><% }) %></select></div>
+    <div class="campo"><label for="comprobante">Nº de remito / factura</label><input id="comprobante" type="text" maxlength="60"></div>
+    <div class="campo"><label for="notas">Notas</label><input id="notas" type="text" maxlength="200"></div>
+    <div class="campo"><span class="etiqueta">Total de la compra</span><span class="compra-total num" id="total">$ 0,00</span></div>
+    <div class="campo"><button class="btn btn-primario btn-grande" id="btn-guardar" type="button" disabled>Registrar compra y sumar stock</button></div>
+  </div></section>
+</div>
+<%- include('../partials/fin') %>

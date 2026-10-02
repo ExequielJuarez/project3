@@ -1,0 +1,12 @@
+<%- include('../partials/inicio') %>
+<div class="consulta">
+  <div class="pagina-cab"><div><h1>Consultar precio</h1><p>Pasá la pistola por el producto, escribí el código o buscá por nombre.</p></div></div>
+  <div class="consulta-entrada">
+    <input id="entrada" type="text" inputmode="search" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="Escaneá o escribí el código…" autofocus aria-label="Código o nombre">
+  </div>
+  <div class="resultados"><div class="resultados-lista" id="resultados" hidden></div></div>
+  <section class="tarjeta consulta-resultado" id="resultado" aria-live="polite">
+    <div class="estado-vacio"><svg class="ico"><use href="#i-precio"/></svg><p>Esperando un producto…</p></div>
+  </section>
+</div>
+<%- include('../partials/fin') %>

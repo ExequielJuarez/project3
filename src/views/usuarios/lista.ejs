@@ -1,0 +1,32 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab"><div><h1>Usuarios</h1><p>Administradores ven todo; cajeros solo venden, consultan y operan la caja.</p></div></div>
+<div class="rejilla-2">
+  <section class="tarjeta"><div class="tabla-caja"><table class="tabla tabla-responsive">
+    <thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+    <tbody><% usuarios.forEach(u => { %><tr class="<%= u.activo ? '' : 'fila-anulada' %>">
+      <td data-etiqueta="Nombre" class="negrita"><%= u.nombre %></td><td data-etiqueta="Usuario" class="mono"><%= u.usuario %></td>
+      <td data-etiqueta="Rol"><span class="insignia <%= u.rol === 'admin' ? 'insignia-info' : 'insignia-neutra' %>"><%= u.rol === 'admin' ? 'Administrador' : 'Cajero' %></span></td>
+      <td data-etiqueta="Estado"><%= u.activo ? 'Activo' : 'Inactivo' %></td>
+      <td class="acc">
+        <form method="post" action="/usuarios/<%= u.id %>/clave" style="display:inline-flex;gap:6px" data-pedir-clave>
+          <input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="clave"><button class="btn btn-chico" type="submit">Nueva clave</button></form>
+        <% if (u.id !== usuario.id) { %><form method="post" action="/usuarios/<%= u.id %>/estado" style="display:inline"><input type="hidden" name="_csrf" value="<%= csrf %>">
+          <button class="btn btn-chico"><%= u.activo ? 'Desactivar' : 'Activar' %></button></form><% } %>
+      </td></tr><% }) %></tbody>
+  </table></div></section>
+  <form class="tarjeta" method="post" action="/usuarios">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div class="tarjeta-cab"><h2>Nuevo usuario</h2></div>
+    <div class="tarjeta-cuerpo">
+      <% if (error) { %><div class="aviso aviso-error"><svg class="ico"><use href="#i-alerta"/></svg><span><%= error %></span></div><% } %>
+      <div class="form-grid">
+        <div class="campo"><label for="nombre">Nombre</label><input id="nombre" name="nombre" type="text" required></div>
+        <div class="campo"><label for="usuario-n">Usuario</label><input id="usuario-n" name="usuario" type="text" autocapitalize="none" required></div>
+        <div class="campo"><label for="clave">Clave inicial (mín. 6)</label><input id="clave" name="clave" type="password" minlength="6" required autocomplete="new-password"></div>
+        <div class="campo"><label for="rol">Rol</label><select id="rol" name="rol"><option value="cajero">Cajero</option><option value="admin">Administrador</option></select></div>
+      </div>
+      <div class="form-pie"><button class="btn btn-primario">Crear usuario</button></div>
+    </div>
+  </form>
+</div>
+<%- include('../partials/fin', { script: 'usuarios' }) %>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <title><%= titulo ? titulo + " · " : "" %><%= (typeof negocio !== 'undefined' && negocio.negocio_nombre) || "Gestión de negocio" %></title>
+  <link rel="icon" href="/img/icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/componentes.css">
+  <% if (typeof layoutSimple === 'undefined' || !layoutSimple) { %><link rel="stylesheet" href="/css/layout.css"><% } %>
+  <link rel="stylesheet" href="/css/paginas.css">
+  <% if (typeof estilo !== 'undefined') { %><link rel="stylesheet" href="/css/<%= estilo %>.css"><% } %>
+</head>
+<body class="<%= typeof bodyClase !== 'undefined' ? bodyClase : '' %>" data-csrf="<%= csrf %>">
+<%- include('iconos') %>
+<% if (typeof layoutSimple === 'undefined' || !layoutSimple) { %>
+<%- include('menu') %>
+<main class="contenido" id="contenido">
+  <% if (flash) { %>
+    <div class="aviso aviso-<%= flash.tipo %>" role="status" data-autocerrar>
+      <svg class="ico"><use href="#i-<%= flash.tipo === 'ok' ? 'ok' : 'alerta' %>"/></svg><span><%= flash.mensaje %></span>
+    </div>
+  <% } %>
+<% } %>

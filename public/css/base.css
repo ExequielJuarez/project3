@@ -1,0 +1,56 @@
+/* ===== Variables y reseteo ===== */
+:root {
+  --c-marca: #0f766e;
+  --c-marca-osc: #115e59;
+  --c-marca-clara: #ccfbf1;
+  --c-fondo: #f3f5f8;
+  --c-superficie: #ffffff;
+  --c-borde: #e2e8f0;
+  --c-texto: #0f172a;
+  --c-texto-2: #475569;
+  --c-texto-3: #94a3b8;
+  --c-ok: #15803d;      --c-ok-bg: #dcfce7;
+  --c-alerta: #b45309;  --c-alerta-bg: #fef3c7;
+  --c-error: #b91c1c;   --c-error-bg: #fee2e2;
+  --c-info: #1d4ed8;    --c-info-bg: #dbeafe;
+  --c-lateral: #0f172a;
+  --radio: 12px;
+  --radio-s: 8px;
+  --sombra: 0 1px 2px rgba(15, 23, 42, .06), 0 4px 16px rgba(15, 23, 42, .05);
+  --sombra-l: 0 12px 40px rgba(15, 23, 42, .22);
+  --ancho-lateral: 248px;
+  --alto-topbar: 56px;
+  --fuente: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; font: 15px/1.5 var(--fuente); color: var(--c-texto); background: var(--c-fondo);
+  -webkit-font-smoothing: antialiased; min-height: 100vh;
+}
+h1, h2, h3, h4 { margin: 0; line-height: 1.2; letter-spacing: -.01em; }
+h1 { font-size: 1.6rem; } h2 { font-size: 1.15rem; } h3 { font-size: 1rem; }
+p { margin: 0; }
+a { color: var(--c-marca); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img, svg { max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+table { border-collapse: collapse; width: 100%; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 3px solid rgba(15, 118, 110, .45); outline-offset: 2px; }
+
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.solo-lectores { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums; }
+.derecha { text-align: right; }
+.centro { text-align: center; }
+.suave { color: var(--c-texto-2); }
+.mono { font-family: var(--mono); }
+.negrita { font-weight: 600; }
+.positivo { color: var(--c-ok); }
+.negativo { color: var(--c-error); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

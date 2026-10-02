@@ -1,0 +1,13 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab"><div><h1>Compras a proveedores</h1><p>Cada ingreso suma stock y actualiza el costo del producto.</p></div>
+  <a class="btn btn-primario" href="/compras/nueva"><svg class="ico"><use href="#i-mas"/></svg>Ingresar mercadería</a></div>
+<section class="tarjeta">
+  <% if (!compras.length) { %><p class="vacio">Todavía no registraste compras.</p><% } else { %>
+  <div class="tabla-caja"><table class="tabla tabla-responsive">
+    <thead><tr><th>#</th><th>Fecha</th><th>Proveedor</th><th>Comprobante</th><th class="derecha">Total</th><th></th></tr></thead>
+    <tbody><% compras.forEach(c => { %><tr><td data-etiqueta="#">#<%= c.id %></td><td data-etiqueta="Fecha"><%= fechaHora(c.fecha) %></td>
+      <td data-etiqueta="Proveedor"><%= c.proveedor || '—' %></td><td data-etiqueta="Comprobante"><%= c.comprobante || '—' %></td>
+      <td data-etiqueta="Total" class="derecha num negrita"><%= precio(c.total) %></td><td class="acc"><a class="btn btn-chico" href="/compras/<%= c.id %>">Ver</a></td></tr><% }) %></tbody>
+  </table></div><% } %>
+</section>
+<%- include('../partials/fin') %>

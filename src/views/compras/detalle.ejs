@@ -1,0 +1,9 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab"><div><h1>Compra #<%= c.id %></h1><p><%= fechaHora(c.fecha) %> · <%= c.proveedor || 'Sin proveedor' %> · Registró <%= c.usuario %><%= c.comprobante ? ' · Comp. ' + c.comprobante : '' %></p></div><a class="btn" href="/compras">Volver</a></div>
+<section class="tarjeta"><div class="tabla-caja"><table class="tabla tabla-responsive">
+  <thead><tr><th>Producto</th><th class="derecha">Cant.</th><th class="derecha">Costo</th><th class="derecha">Subtotal</th></tr></thead>
+  <tbody><% c.items.forEach(i => { %><tr><td data-etiqueta="Producto"><%= i.nombre %></td><td data-etiqueta="Cant." class="derecha num"><%= cant(i.cantidad) %></td>
+    <td data-etiqueta="Costo" class="derecha num"><%= precio(i.costo_unitario) %></td><td data-etiqueta="Subtotal" class="derecha num negrita"><%= precio(i.subtotal) %></td></tr><% }) %></tbody>
+  <tfoot><tr><td colspan="3" class="derecha">Total</td><td class="derecha num"><%= precio(c.total) %></td></tr></tfoot>
+</table></div></section>
+<%- include('../partials/fin') %>

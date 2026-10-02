@@ -1,0 +1,16 @@
+<%- include('../partials/inicio') %>
+<div class="pagina-cab"><div><h1>Historial de cajas</h1><p>Registro de cada turno: apertura, ventas y diferencias de cierre.</p></div><a class="btn" href="/caja">Volver</a></div>
+<section class="tarjeta">
+  <% if (!cajas.length) { %><p class="vacio">Todavía no hay cajas.</p><% } else { %>
+  <div class="tabla-caja"><table class="tabla tabla-responsive">
+    <thead><tr><th>#</th><th>Fecha</th><th>Cajero</th><th class="derecha">Inicial</th><th class="derecha">Ventas</th><th class="derecha">Diferencia</th><th>Estado</th><th></th></tr></thead>
+    <tbody><% cajas.forEach(c => { %><tr>
+      <td data-etiqueta="#">#<%= c.id %></td><td data-etiqueta="Fecha"><%= fechaHora(c.abierta_en) %></td><td data-etiqueta="Cajero"><%= c.cajero %></td>
+      <td data-etiqueta="Inicial" class="derecha num"><%= precio(c.monto_inicial) %></td>
+      <td data-etiqueta="Ventas" class="derecha num"><%= c.estado === 'cerrada' ? precio(c.total_ventas) : '—' %></td>
+      <td data-etiqueta="Diferencia" class="derecha num <%= c.diferencia < 0 ? 'negativo' : (c.diferencia > 0 ? 'positivo' : '') %>"><%= c.estado === 'cerrada' ? precio(c.diferencia) : '—' %></td>
+      <td data-etiqueta="Estado"><span class="insignia <%= c.estado === 'abierta' ? 'insignia-ok' : 'insignia-neutra' %>"><%= c.estado === 'abierta' ? 'Abierta' : 'Cerrada' %></span></td>
+      <td class="acc"><a class="btn btn-chico" href="/caja/<%= c.id %>">Ver</a></td></tr><% }) %></tbody>
+  </table></div><% } %>
+</section>
+<%- include('../partials/fin') %>

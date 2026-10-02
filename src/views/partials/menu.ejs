@@ -1,0 +1,56 @@
+<%
+  const esAdmin = usuario.rol === 'admin';
+  const grupos = [
+    { t: 'Operación', items: [
+      { r: '/', i: 'inicio', n: 'Inicio', exacto: true },
+      { r: '/pos', i: 'pos', n: 'Punto de venta' },
+      { r: '/precios', i: 'precio', n: 'Consultar precio' },
+      { r: '/caja', i: 'caja', n: 'Caja' },
+      { r: '/ventas', i: 'ventas', n: 'Ventas y facturas' },
+    ]},
+    { t: 'Inventario', items: [
+      { r: '/productos', i: 'productos', n: 'Productos' },
+      { r: '/categorias', i: 'categorias', n: 'Categorías', admin: true },
+      { r: '/compras', i: 'compras', n: 'Compras', admin: true },
+      { r: '/proveedores', i: 'proveedores', n: 'Proveedores', admin: true },
+    ]},
+    { t: 'Gestión', items: [
+      { r: '/clientes', i: 'clientes', n: 'Clientes' },
+      { r: '/reportes', i: 'reportes', n: 'Reportes', admin: true },
+      { r: '/usuarios', i: 'usuarios', n: 'Usuarios', admin: true },
+      { r: '/configuracion', i: 'config', n: 'Configuración', admin: true },
+    ]},
+  ];
+%>
+<header class="topbar">
+  <button class="btn-icono" type="button" data-menu-abrir aria-label="Abrir menú"><svg class="ico"><use href="#i-menu"/></svg></button>
+  <a class="topbar-marca" href="/"><%= negocio.negocio_nombre %></a>
+  <a class="chip-caja <%= cajaActual ? 'abierta' : 'cerrada' %>" href="<%= cajaActual ? '/caja' : '/caja/abrir' %>">
+    <span class="punto"></span><%= cajaActual ? 'Caja abierta' : 'Caja cerrada' %>
+  </a>
+</header>
+<div class="velo" data-menu-cerrar></div>
+<nav class="lateral" id="lateral" aria-label="Menú principal">
+  <div class="lateral-cabecera">
+    <span class="logo"><svg class="ico"><use href="#i-caja"/></svg></span>
+    <div><strong><%= negocio.negocio_nombre %></strong><small>Gestión de negocio</small></div>
+    <button class="btn-icono cerrar-movil" type="button" data-menu-cerrar aria-label="Cerrar menú"><svg class="ico"><use href="#i-cerrar"/></svg></button>
+  </div>
+  <div class="lateral-cuerpo">
+    <% grupos.forEach(g => { const items = g.items.filter(x => !x.admin || esAdmin); if (!items.length) return; %>
+      <p class="lateral-titulo"><%= g.t %></p>
+      <% items.forEach(x => { const activo = x.exacto ? rutaActual === x.r : rutaActual.startsWith(x.r); %>
+        <a class="lateral-link <%= activo ? 'activo' : '' %>" href="<%= x.r %>"><svg class="ico"><use href="#i-<%= x.i %>"/></svg><%= x.n %></a>
+      <% }) %>
+    <% }) %>
+  </div>
+  <div class="lateral-pie">
+    <a class="usuario" href="/perfil/clave" title="Cambiar mi clave">
+      <span class="avatar"><%= usuario.nombre.charAt(0).toUpperCase() %></span>
+      <span><strong><%= usuario.nombre %></strong><small><%= usuario.rol === 'admin' ? 'Administrador' : 'Cajero' %></small></span>
+    </a>
+    <form method="post" action="/logout"><input type="hidden" name="_csrf" value="<%= csrf %>">
+      <button class="btn-icono" aria-label="Cerrar sesión" title="Cerrar sesión"><svg class="ico"><use href="#i-salir"/></svg></button>
+    </form>
+  </div>
+</nav>

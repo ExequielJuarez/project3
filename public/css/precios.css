@@ -1,0 +1,11 @@
+/* ===== Consultar precio (se pasa la pistola y se ve el precio grande) ===== */
+.pagina-precios .contenido { display: grid; place-items: start center; }
+.consulta { width: 100%; max-width: 720px; margin-top: 3vh; }
+.consulta-entrada input { min-height: 64px; font-size: 1.4rem; text-align: center; border-width: 2px; }
+.consulta-resultado { margin-top: 20px; padding: 32px 22px; text-align: center; min-height: 260px; display: grid; place-content: center; gap: 8px; }
+.consulta-resultado .estado-vacio { color: var(--c-texto-3); }
+.consulta-resultado .estado-vacio .ico { width: 64px; height: 64px; stroke-width: 1.2; }
+.consulta-nombre { font-size: 1.5rem; font-weight: 600; }
+.consulta-precio { font-size: clamp(3rem, 14vw, 6rem); font-weight: 800; color: var(--c-marca); letter-spacing: -.04em; line-height: 1.05; }
+.consulta-meta { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+.consulta-no { color: var(--c-error); font-size: 1.5rem; font-weight: 700; }
