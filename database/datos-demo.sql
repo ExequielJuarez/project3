@@ -1,3 +1,4 @@
+USE negocio_db;
 -- Datos de ejemplo para probar el sistema (npm run db:demo). No se cargan si ya hay productos.
 INSERT IGNORE INTO categorias (nombre) VALUES ('Almacén'), ('Bebidas'), ('Lácteos'), ('Limpieza'), ('Golosinas');
 

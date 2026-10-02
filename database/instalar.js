@@ -13,7 +13,7 @@ const instalar = require("../src/config/instalador");
   console.log(`🗄️  Base de datos "${db.opciones.database}" lista en ${db.opciones.host}`);
   if (process.argv.includes("--demo")) {
     const c = await mysql.createConnection({ ...db.opciones, multipleStatements: true, charset: "utf8mb4" });
-    await c.query(fs.readFileSync(path.join(__dirname, "datos-demo.sql"), "utf8"));
+    await c.query(fs.readFileSync(path.join(__dirname, "datos-demo.sql"), "utf8").replace(/^\s*USE\b.*$/gim, ""));
     await c.end();
     console.log("📦 Datos de ejemplo cargados (productos, categorías, un cliente y un proveedor).");
   }

@@ -24,7 +24,9 @@ async function instalar() {
   await admin.query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
   // 2) Las tablas (database/schema.sql)
   await admin.query(`USE \`${database}\``);
-  await admin.query(fs.readFileSync(path.join(__dirname, "../../database/schema.sql"), "utf8"));
+  // El schema.sql trae su propio CREATE DATABASE / USE (para ejecutarlo a mano); acá se usa la base del .env
+  const sql = fs.readFileSync(path.join(__dirname, "../../database/schema.sql"), "utf8").replace(/^\s*(CREATE DATABASE|USE)\b.*$/gim, "");
+  await admin.query(sql);
   await admin.end();
 
   // 3) Configuración y usuario inicial

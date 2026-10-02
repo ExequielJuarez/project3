@@ -1,8 +1,14 @@
 -- =====================================================================
 --  SISTEMA DE GESTIÓN DE NEGOCIO · Esquema SQL (MySQL / MariaDB)
---  Se aplica solo al iniciar (CREATE ... IF NOT EXISTS): no borra datos.
+--  Se puede ejecutar completo (rayo de Workbench) o con:  mysql -u root -p < database/schema.sql
+--  Crea la base "negocio_db" y todas las tablas. Es seguro volver a correrlo:
+--  usa IF NOT EXISTS y no borra datos.
 --  Motor InnoDB (transacciones), utf8mb4, dinero en DECIMAL(12,2).
+--  Si cambiás el nombre de la base, cambialo también en DB_NAME del archivo .env
 -- =====================================================================
+
+CREATE DATABASE IF NOT EXISTS negocio_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE negocio_db;
 
 -- Configuración general (nombre del negocio, datos del ticket, numeración)
 CREATE TABLE IF NOT EXISTS configuracion (
@@ -206,3 +212,16 @@ SELECT
 FROM ventas
 WHERE estado = 'completada'
 GROUP BY fecha_dia;
+
+-- ---------------------------------------------------------------------
+--  Datos iniciales
+-- ---------------------------------------------------------------------
+INSERT IGNORE INTO configuracion (clave, valor) VALUES
+  ('negocio_nombre', 'Mi Negocio'), ('negocio_cuit', ''), ('negocio_direccion', ''), ('negocio_telefono', ''),
+  ('punto_venta', '1'), ('proximo_numero', '1'), ('pie_ticket', '¡Gracias por su compra!'),
+  ('stock_negativo', '0'), ('descuento_maximo', '100');
+
+-- Usuario inicial (solo si no hay ninguno): admin / admin123 → el sistema pide cambiar la clave al entrar
+INSERT INTO usuarios (nombre, usuario, clave_hash, rol, debe_cambiar_clave)
+SELECT 'Administrador', 'admin', '$2b$10$/ttpzCrRnCBGJQFIndIP6ubN38M2aBIiXpWY7VVjP4HV1pjTApsjq', 'admin', 1 FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM usuarios);
